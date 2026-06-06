@@ -5,9 +5,7 @@ import type {
   MailAccountSummary,
   MailboxOverview
 } from '../types';
-import { readApiError } from '../utils/mailbox';
-
-export type ApiErrorParser = (response: Response, fallbackMessage?: string) => Promise<Error>;
+import { readApiError, type ApiErrorParser } from './errors';
 
 export type EmailSearchParams = {
   query: string;

@@ -4,8 +4,7 @@ import type {
   WeeklyReportSummary,
   WeeklyWorkspaceResponse
 } from '../types';
-import { readApiError } from '../utils/mailbox';
-import type { ApiErrorParser } from './mailbox';
+import { readApiError, type ApiErrorParser } from './errors';
 
 export type WeeklyReportCreateRequest = {
   reportType: ReportType;

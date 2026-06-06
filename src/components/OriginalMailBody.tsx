@@ -1,5 +1,5 @@
 import type { EmailDetail } from '../types';
-import { buildMailHtmlDocument, decodeHtmlEntities } from '../utils/mailbox';
+import { buildMailHtmlDocument, decodeHtmlEntities } from '../utils/mailContent';
 
 type OriginalMailBodyProps = {
   detail: EmailDetail;

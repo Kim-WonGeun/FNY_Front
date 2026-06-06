@@ -1,6 +1,7 @@
 import type { AuthSession, LoadState, MailAccountSummary, MailDensity, NavView, ReportType, WeeklyLoadState, WeeklyReport } from '../types';
 import { AccountsPage } from './AccountsPage';
 import { HomeDashboardPage, type HomeDashboardPageProps } from './HomeDashboardPage';
+import { MailDetailPage, type MailDetailPageProps } from './MailDetailPage';
 import { MailboxPage, type MailboxPageProps } from './MailboxPage';
 import { SettingsPage } from './SettingsPage';
 import {
@@ -44,10 +45,19 @@ type AppRoutesProps = {
     onOriginalMailDefaultOpenChange: (open: boolean) => void;
     onLogout: () => void;
   };
+  mailDetailPageProps: MailDetailPageProps;
   mailboxPageProps: MailboxPageProps;
 };
 
-export function AppRoutes({ navView, homeDashboardProps, weekly, accounts, settings, mailboxPageProps }: AppRoutesProps) {
+export function AppRoutes({
+  navView,
+  homeDashboardProps,
+  weekly,
+  accounts,
+  settings,
+  mailDetailPageProps,
+  mailboxPageProps
+}: AppRoutesProps) {
   if (navView === 'home') {
     return <HomeDashboardPage {...homeDashboardProps} />;
   }
@@ -77,6 +87,10 @@ export function AppRoutes({ navView, homeDashboardProps, weekly, accounts, setti
 
   if (navView === 'settings') {
     return <SettingsPage {...settings} />;
+  }
+
+  if (navView === 'mailDetail') {
+    return <MailDetailPage {...mailDetailPageProps} />;
   }
 
   return <MailboxPage {...mailboxPageProps} />;

@@ -13,13 +13,13 @@ import type {
   MailboxCategory,
   MailboxDatePreset
 } from '../types';
-import { EmptyState, PaginationBar } from './common';
+import { PaginationBar } from './common';
 import { MailboxAdvancedSearch } from './MailboxAdvancedSearch';
 import { MailboxDateFilter } from './MailboxDateFilter';
+import { MailboxEmailList } from './MailboxEmailList';
 import { MailboxFilterBar } from './MailboxFilterBar';
 import { MailboxLoadStatus } from './MailboxLoadStatus';
 import { MailboxToolbar } from './MailboxToolbar';
-import { MailListRow } from './mail';
 
 export type MailboxPageProps = {
   loadState: LoadState;
@@ -41,6 +41,8 @@ export type MailboxPageProps = {
   totalPages: number;
   filteredCount: number;
   pagedEmails: EmailListItem[];
+  selectedEmailId: string;
+  scrollTop: number;
   expandedMailId: string | null;
   emailDetail: EmailDetail | null;
   detailLoadState: DetailLoadState;
@@ -71,6 +73,7 @@ export type MailboxPageProps = {
   onUpdateAttentionStatus: (emailId: string, status: AttentionStatus) => void;
   onSaveAnalysisFeedback: (analysisId: string, feedbackType: AnalysisFeedbackType) => void;
   onToggleEmailDetail: (emailId: string) => void;
+  onScrollTopChange: (scrollTop: number) => void;
 };
 
 export function MailboxPage({
@@ -93,6 +96,8 @@ export function MailboxPage({
   totalPages,
   filteredCount,
   pagedEmails,
+  selectedEmailId,
+  scrollTop,
   expandedMailId,
   emailDetail,
   detailLoadState,
@@ -122,11 +127,13 @@ export function MailboxPage({
   onRequestAnalysis,
   onUpdateAttentionStatus,
   onSaveAnalysisFeedback,
-  onToggleEmailDetail
+  onToggleEmailDetail,
+  onScrollTopChange
 }: MailboxPageProps) {
-  const hasAnyFilter =
-    category !== 'all' || analysisFilter !== 'all' || query.trim() || senderQuery.trim() || startDate || endDate;
-  const hasSearchFilter = query.trim() || senderQuery.trim() || startDate || endDate;
+  const hasAnyFilter = Boolean(
+    category !== 'all' || analysisFilter !== 'all' || query.trim() || senderQuery.trim() || startDate || endDate
+  );
+  const hasSearchFilter = Boolean(query.trim() || senderQuery.trim() || startDate || endDate);
 
   return (
     <div className="page-card mailbox-card" aria-label="메일함">
@@ -176,47 +183,31 @@ export function MailboxPage({
         onPageChange={onPageChange}
       />
 
-      <section className="all-mail-panel">
-        <div className="mail-table" role="list">
-          {pagedEmails.length === 0 ? (
-            <EmptyState
-              title="표시할 메일이 없습니다"
-              description={
-                hasSearchFilter
-                  ? '검색어와 선택한 필터에 맞는 메일을 찾지 못했습니다.'
-                  : '선택한 분류에 해당하는 메일이 없습니다.'
-              }
-              actionLabel={hasAnyFilter ? '전체 메일 보기' : undefined}
-              onAction={onResetFilters}
-            />
-          ) : (
-            pagedEmails.map((email, index) => (
-              <MailListRow
-                key={email.id}
-                email={email}
-                index={(page - 1) * ALL_MAIL_PAGE_SIZE + index + 1}
-                expanded={email.id === expandedMailId}
-                detail={email.id === expandedMailId && emailDetail?.id === email.id ? emailDetail : null}
-                detailLoadState={detailLoadState}
-                detailErrorMessage={detailErrorMessage}
-                theme={theme}
-                originalMailDefaultOpen={originalMailDefaultOpen}
-                analysisSubmitting={analysisRequestingId === email.id}
-                agentHealth={agentHealth}
-                attentionUpdating={attentionUpdatingId === email.id}
-                onRequestAnalysis={onRequestAnalysis}
-                onUpdateAttentionStatus={onUpdateAttentionStatus}
-                feedbackSavingId={analysisFeedbackSavingId}
-                feedbackMessages={analysisFeedbackMessages}
-                onSaveAnalysisFeedback={onSaveAnalysisFeedback}
-                analysisHistory={analysisHistory[email.id] ?? []}
-                analysisHistoryState={analysisHistoryState[email.id] ?? 'idle'}
-                onSelect={() => onToggleEmailDetail(email.id)}
-              />
-            ))
-          )}
-        </div>
-      </section>
+      <MailboxEmailList
+        agentHealth={agentHealth}
+        analysisFeedbackMessages={analysisFeedbackMessages}
+        analysisFeedbackSavingId={analysisFeedbackSavingId}
+        analysisHistory={analysisHistory}
+        analysisHistoryState={analysisHistoryState}
+        analysisRequestingId={analysisRequestingId}
+        attentionUpdatingId={attentionUpdatingId}
+        detailErrorMessage={detailErrorMessage}
+        detailLoadState={detailLoadState}
+        hasAnyFilter={hasAnyFilter}
+        hasSearchFilter={hasSearchFilter}
+        originalMailDefaultOpen={originalMailDefaultOpen}
+        page={page}
+        pagedEmails={pagedEmails}
+        scrollTop={scrollTop}
+        selectedEmailId={selectedEmailId}
+        theme={theme}
+        onResetFilters={onResetFilters}
+        onRequestAnalysis={onRequestAnalysis}
+        onSaveAnalysisFeedback={onSaveAnalysisFeedback}
+        onScrollTopChange={onScrollTopChange}
+        onToggleEmailDetail={onToggleEmailDetail}
+        onUpdateAttentionStatus={onUpdateAttentionStatus}
+      />
     </div>
   );
 }

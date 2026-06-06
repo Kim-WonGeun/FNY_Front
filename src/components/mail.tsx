@@ -17,6 +17,7 @@ export function MailListRow({
   index,
   expanded,
   detail,
+  selected = false,
   detailLoadState,
   detailErrorMessage,
   theme,
@@ -37,6 +38,7 @@ export function MailListRow({
   index: number;
   expanded: boolean;
   detail: EmailDetail | null;
+  selected?: boolean;
   detailLoadState: DetailLoadState;
   detailErrorMessage: string | null;
   theme: 'light' | 'dark';
@@ -56,7 +58,15 @@ export function MailListRow({
   const isLoading = expanded && detailLoadState === 'loading';
 
   return (
-    <div className={`mail-list-item${expanded ? ' mail-list-item-expanded' : ''}`} role="listitem">
+    <div
+      className={[
+        'mail-list-item',
+        expanded ? 'mail-list-item-expanded' : '',
+        selected ? 'mail-list-item-selected' : ''
+      ].filter(Boolean).join(' ')}
+      role="listitem"
+      data-email-id={email.id}
+    >
       <MailListRowHeader email={email} index={index} expanded={expanded} onSelect={onSelect} />
 
       {expanded ? (

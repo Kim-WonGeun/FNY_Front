@@ -6,7 +6,7 @@ import type {
   EmailDetail,
   MailSyncResult
 } from '../types';
-import { readApiError } from '../utils/mailbox';
+import { readApiError } from './errors';
 
 export async function fetchAgentHealth() {
   const response = await fetch('/api/agent/health');

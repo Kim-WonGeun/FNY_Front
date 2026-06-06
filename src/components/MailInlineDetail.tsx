@@ -10,7 +10,7 @@ import type {
   EmailListItem,
   LoadState
 } from '../types';
-import { decodeHtmlEntities } from '../utils/mailbox';
+import { decodeHtmlEntities } from '../utils/mailContent';
 import { AnalysisInsightSummary } from './AnalysisInsightSummary';
 import { AnalysisStatusCard } from './mailAnalysis';
 import { OriginalMailBody } from './OriginalMailBody';

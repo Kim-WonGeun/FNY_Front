@@ -1,6 +1,6 @@
 import type { EmailAnalysis, LoadState } from '../types';
 import { formatDate } from '../utils/date';
-import { priorityLabel } from '../utils/mailbox';
+import { priorityLabel } from '../utils/mailboxLabels';
 
 type AnalysisHistoryPanelProps = {
   currentAnalysisId: string;

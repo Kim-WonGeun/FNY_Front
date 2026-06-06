@@ -57,7 +57,7 @@ export function AppSidebar({
           onClick={() => onNavViewChange('home')}
         />
         <SidebarLink
-          active={navView === 'allMail'}
+          active={navView === 'allMail' || navView === 'mailDetail'}
           label="메일함"
           icon={<IconInbox size={20} />}
           onClick={() => onNavViewChange('allMail')}

@@ -1,37 +1,19 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { DEFAULT_WEEKLY_END_DATE, DEFAULT_WEEKLY_START_DATE } from '../constants';
-import {
-  archiveWeeklyReportWorkspace,
-  createWeeklyReport,
-  fetchWeeklyReport,
-  fetchWeeklyReports,
-  fetchWeeklyWorkspace,
-  saveWeeklyReportWorkspace
-} from '../api/reports';
-import type { WeeklyReportControlsProps, WeeklyReportHistoryProps } from '../components/WeeklyReportsPage';
+import { useCallback, useEffect, useState } from 'react';
 import type { WeeklyReportDraftProps, WeeklyReportSourcesProps } from '../components/WeeklyReportView';
 import type {
   AuthSession,
   NavView,
-  ReportType,
   WeeklyDraftViewMode,
   WeeklyLoadState,
   WeeklyReport,
-  WeeklyReportSummary,
-  WeeklyWorkspaceSaveMode,
-  WeeklyWorkspaceSnapshot,
   WeeklyWorkspaceStatus
 } from '../types';
-import {
-  buildWeeklyReportDraft,
-  getIncludedWeeklyThreads,
-  normalizeReportType,
-  readWeeklyWorkspaceSnapshot,
-  updateWeeklyHistoryWorkspaceStatus,
-  weeklyWorkspaceStorageKey,
-  workspaceSaveStatusFromMode,
-  workspaceStatusFromResponse
-} from '../utils/reports';
+import { useWeeklyReportGeneration } from './useWeeklyReportGeneration';
+import { useWeeklyHistory } from './useWeeklyHistory';
+import { useWeeklyDraft } from './useWeeklyDraft';
+import { useWeeklySourceSelection } from './useWeeklySourceSelection';
+import { useWeeklyWorkspace } from './useWeeklyWorkspace';
+import { normalizeReportType } from '../utils/reports';
 
 type UseWeeklyReportsOptions = {
   authSession: AuthSession | null;
@@ -53,90 +35,94 @@ export function useWeeklyReports({
   const [weeklyReport, setWeeklyReport] = useState<WeeklyReport | null>(null);
   const [weeklyLoadState, setWeeklyLoadState] = useState<WeeklyLoadState>('idle');
   const [weeklyError, setWeeklyError] = useState<string | null>(null);
-  const [weeklyHistory, setWeeklyHistory] = useState<WeeklyReportSummary[]>([]);
-  const [weeklyHistoryLoading, setWeeklyHistoryLoading] = useState(false);
-  const [weeklyHistoryActionId, setWeeklyHistoryActionId] = useState<string | null>(null);
-  const [weeklyHistoryOpen, setWeeklyHistoryOpen] = useState(true);
-  const [selectedHistoryReportId, setSelectedHistoryReportId] = useState<string | null>(null);
-  const [weeklyCopyState, setWeeklyCopyState] = useState<'idle' | 'done' | 'error'>('idle');
-  const [selectedReportType, setSelectedReportType] = useState<ReportType>('WEEKLY');
-  const [weeklyStartDate, setWeeklyStartDate] = useState(DEFAULT_WEEKLY_START_DATE);
-  const [weeklyEndDate, setWeeklyEndDate] = useState(DEFAULT_WEEKLY_END_DATE);
-  const [editableWeeklyDraft, setEditableWeeklyDraft] = useState('');
-  const [weeklyDraftDirty, setWeeklyDraftDirty] = useState(false);
-  const [excludedWeeklySourceIds, setExcludedWeeklySourceIds] = useState<string[]>([]);
-  const [weeklySourcesOpen, setWeeklySourcesOpen] = useState(false);
   const [weeklyWorkspaceStatus, setWeeklyWorkspaceStatus] = useState<WeeklyWorkspaceStatus | null>(null);
   const [weeklyDraftViewMode, setWeeklyDraftViewMode] = useState<WeeklyDraftViewMode>('original');
   const [weeklySaveState, setWeeklySaveState] = useState<'idle' | 'draft-saved' | 'saved' | 'error'>('idle');
+  const {
+    excludedWeeklySourceIds,
+    setExcludedWeeklySourceIds,
+    weeklySourcesOpen,
+    setWeeklySourcesOpen,
+    includedWeeklyThreads,
+    toggleWeeklySource,
+    includeAllWeeklySources,
+    toggleWeeklySourcesOpen
+  } = useWeeklySourceSelection(weeklyReport);
 
-  const includedWeeklyThreads = useMemo(
-    () => getIncludedWeeklyThreads(weeklyReport, excludedWeeklySourceIds),
-    [weeklyReport, excludedWeeklySourceIds]
-  );
-
-  const weeklyDraftText = useMemo(() => {
-    if (!weeklyReport) {
-      return '';
-    }
-    return buildWeeklyReportDraft(weeklyReport, selectedReportType, includedWeeklyThreads);
-  }, [weeklyReport, selectedReportType, includedWeeklyThreads]);
-
-  const loadLocalWeeklyWorkspaceFallback = useCallback(
-    (reportId: string) => {
-      const snapshot = readWeeklyWorkspaceSnapshot(userId, reportId);
-      if (!snapshot) {
-        setWeeklyWorkspaceStatus(null);
-        setWeeklyDraftViewMode('original');
-        return;
-      }
-      setEditableWeeklyDraft(snapshot.draftText);
-      setExcludedWeeklySourceIds(snapshot.excludedSourceIds);
-      setWeeklyDraftDirty(true);
-      setWeeklyWorkspaceStatus({ mode: snapshot.saveMode, savedAt: snapshot.savedAt, storage: 'local' });
-      setWeeklyDraftViewMode('workspace');
+  const { controls, selectedReportType, setSelectedReportType } = useWeeklyReportGeneration({
+    primaryMailAccountId,
+    parseApiError,
+    onGenerateStart: () => {
+      setWeeklyLoadState('loading');
+      setWeeklySourcesOpen(false);
+      setWeeklyError(null);
     },
-    [userId]
-  );
-
-  const loadWeeklyWorkspace = useCallback(
-    async (reportId: string) => {
-      try {
-        const workspace = await fetchWeeklyWorkspace(reportId);
-        if (!workspace) {
-          loadLocalWeeklyWorkspaceFallback(reportId);
-          return;
-        }
-        setEditableWeeklyDraft(workspace.draftText);
-        setExcludedWeeklySourceIds(workspace.excludedSourceIds ?? []);
-        setWeeklyDraftDirty(true);
-        setWeeklyWorkspaceStatus(workspaceStatusFromResponse(workspace));
-        setWeeklyDraftViewMode('workspace');
-      } catch {
-        loadLocalWeeklyWorkspaceFallback(reportId);
-      }
+    onGenerateSuccess: async (report) => {
+      setWeeklyReport(report);
+      setWeeklySourcesOpen(false);
+      setSelectedReportType(normalizeReportType(report.reportType));
+      setWeeklyDraftViewMode('original');
+      setWeeklyLoadState('ready');
+      selectHistoryReport(report.reportId);
+      await loadWeeklyHistory();
     },
-    [loadLocalWeeklyWorkspaceFallback]
-  );
+    onGenerateError: (error) => {
+      setWeeklyReport(null);
+      setWeeklyLoadState('error');
+      setWeeklyError(error instanceof Error ? error.message : 'Unknown error');
+    }
+  });
 
-  const loadWeeklyHistory = useCallback(async () => {
-    if (!primaryMailAccountId) {
-      setWeeklyHistory([]);
-      return;
-    }
-    setWeeklyHistoryLoading(true);
-    try {
-      const rows = await fetchWeeklyReports(primaryMailAccountId, parseApiError);
-      setWeeklyHistory(rows);
-    } catch (error) {
-      if (authSession) {
-        setWeeklyError(error instanceof Error ? error.message : 'Unknown error');
-      }
-      setWeeklyHistory([]);
-    } finally {
-      setWeeklyHistoryLoading(false);
-    }
-  }, [authSession, parseApiError, primaryMailAccountId]);
+  const {
+    history,
+    loadWeeklyHistory,
+    resetWeeklyHistory,
+    selectHistoryReport,
+    setWeeklyHistoryActionId,
+    updateHistoryWorkspaceStatus
+  } = useWeeklyHistory({
+    authSession,
+    navView,
+    primaryMailAccountId,
+    activeReportId: weeklyReport?.reportId ?? null,
+    parseApiError,
+    onOpenStart: () => {
+      setWeeklySourcesOpen(false);
+      setWeeklyLoadState('loading');
+      setWeeklyError(null);
+    },
+    onOpenSuccess: (report) => {
+      setWeeklyReport(report);
+      setWeeklySourcesOpen(false);
+      setSelectedReportType(normalizeReportType(report.reportType));
+      setWeeklyDraftViewMode('original');
+      setWeeklyLoadState('ready');
+    },
+    onOpenError: (error) => {
+      setWeeklyReport(null);
+      setWeeklyLoadState('error');
+      setWeeklyError(error instanceof Error ? error.message : 'Unknown error');
+    },
+    onCloseAccepted: () => {
+      setWeeklyReport(null);
+      setWeeklySourcesOpen(false);
+      setWeeklyLoadState('idle');
+      setWeeklyError(null);
+      setWeeklyDraftViewMode('original');
+    },
+    onHistoryError: (error) => {
+      setWeeklyError(error instanceof Error ? error.message : 'Unknown error');
+    },
+    onClearWorkspace: clearWeeklyWorkspace
+  });
+
+  function loadWeeklyWorkspace(reportId: string) {
+    return weeklyWorkspace.loadWeeklyWorkspace(reportId);
+  }
+
+  function clearWeeklyWorkspace(reportId: string) {
+    return weeklyWorkspace.clearWeeklyWorkspace(reportId);
+  }
 
   useEffect(() => {
     if (!authSession) {
@@ -146,23 +132,12 @@ export function useWeeklyReports({
     setWeeklySourcesOpen(false);
     setWeeklyLoadState('idle');
     setWeeklyError(null);
-    setWeeklyHistory([]);
-    setSelectedHistoryReportId(null);
+    resetWeeklyHistory();
   }, [authSession, userId]);
-
-  useEffect(() => {
-    setWeeklyCopyState('idle');
-  }, [weeklyReport]);
 
   useEffect(() => {
     setWeeklySaveState('idle');
   }, [weeklyReport]);
-
-  useEffect(() => {
-    if (!weeklyDraftDirty) {
-      setEditableWeeklyDraft(weeklyDraftText);
-    }
-  }, [weeklyDraftText, weeklyDraftDirty]);
 
   useEffect(() => {
     setWeeklyDraftDirty(false);
@@ -179,232 +154,36 @@ export function useWeeklyReports({
     void loadWeeklyWorkspace(weeklyReport.reportId);
   }, [loadWeeklyWorkspace, weeklyReport]);
 
-  useEffect(() => {
-    if (!authSession || navView !== 'weekly' || !primaryMailAccountId) {
-      return;
-    }
-    void loadWeeklyHistory();
-  }, [authSession, navView, primaryMailAccountId, loadWeeklyHistory]);
+  const {
+    weeklyCopyState,
+    editableWeeklyDraft,
+    setEditableWeeklyDraft,
+    weeklyDraftDirty,
+    setWeeklyDraftDirty,
+    applySelectedSourcesToDraft,
+    copyWeeklyReportDraft,
+    changeEditableWeeklyDraft
+  } = useWeeklyDraft({
+    weeklyReport,
+    selectedReportType,
+    includedWeeklyThreads
+  });
 
-  async function openWeeklyReportFromHistory(reportId: string) {
-    setSelectedHistoryReportId(reportId);
-    setWeeklySourcesOpen(false);
-    setWeeklyLoadState('loading');
-    setWeeklyError(null);
-    try {
-      const data = await fetchWeeklyReport(reportId, parseApiError);
-      setWeeklyReport(data);
-      setWeeklySourcesOpen(false);
-      setSelectedReportType(normalizeReportType(data.reportType));
-      setWeeklyDraftViewMode('original');
-      setWeeklyLoadState('ready');
-    } catch (error) {
-      setWeeklyReport(null);
-      setWeeklyLoadState('error');
-      setWeeklyError(error instanceof Error ? error.message : 'Unknown error');
-    }
-  }
-
-  function closeWeeklyReportFromHistory(reportId: string) {
-    if (selectedHistoryReportId !== reportId && weeklyReport?.reportId !== reportId) {
-      return;
-    }
-
-    setWeeklyReport(null);
-    setSelectedHistoryReportId(null);
-    setWeeklySourcesOpen(false);
-    setWeeklyLoadState('idle');
-    setWeeklyError(null);
-    setWeeklyDraftViewMode('original');
-  }
-
-  async function generateWeeklyReport() {
-    if (!primaryMailAccountId) {
-      setWeeklyError('연결된 메일 계정이 없습니다.');
-      setWeeklyLoadState('error');
-      return;
-    }
-
-    setWeeklyLoadState('loading');
-    setWeeklySourcesOpen(false);
-    setWeeklyError(null);
-
-    try {
-      if (!weeklyStartDate || !weeklyEndDate) {
-        throw new Error('시작일과 종료일을 모두 선택해 주세요.');
-      }
-      if (weeklyStartDate > weeklyEndDate) {
-        throw new Error('시작일은 종료일보다 늦을 수 없습니다.');
-      }
-
-      const data = await createWeeklyReport(
-        primaryMailAccountId,
-        {
-          reportType: selectedReportType,
-          startDate: weeklyStartDate,
-          endDate: weeklyEndDate
-        },
-        parseApiError
-      );
-      setWeeklyReport(data);
-      setWeeklySourcesOpen(false);
-      setSelectedReportType(normalizeReportType(data.reportType));
-      setWeeklyDraftViewMode('original');
-      setWeeklyLoadState('ready');
-      setSelectedHistoryReportId(data.reportId);
-      await loadWeeklyHistory();
-    } catch (error) {
-      setWeeklyReport(null);
-      setWeeklyLoadState('error');
-      setWeeklyError(error instanceof Error ? error.message : 'Unknown error');
-    }
-  }
-
-  async function copyWeeklyReportDraft() {
-    if (!editableWeeklyDraft) {
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(editableWeeklyDraft);
-      setWeeklyCopyState('done');
-    } catch {
-      setWeeklyCopyState('error');
-    }
-  }
-
-  async function saveWeeklyWorkspace(mode: WeeklyWorkspaceSaveMode) {
-    if (!weeklyReport) {
-      return;
-    }
-    setWeeklySaveState('idle');
-    try {
-      const workspace = await saveWeeklyReportWorkspace(weeklyReport.reportId, {
-        draftText: editableWeeklyDraft,
-        saveStatus: workspaceSaveStatusFromMode(mode),
-        excludedSourceIds: excludedWeeklySourceIds
-      });
-      setWeeklyWorkspaceStatus(workspaceStatusFromResponse(workspace));
-      setWeeklySaveState(mode === 'draft' ? 'draft-saved' : 'saved');
-      setWeeklyDraftViewMode('workspace');
-      setWeeklyHistory((current) =>
-        updateWeeklyHistoryWorkspaceStatus(current, weeklyReport.reportId, workspace.saveStatus)
-      );
-      localStorage.removeItem(weeklyWorkspaceStorageKey(userId, weeklyReport.reportId));
-    } catch {
-      try {
-        const snapshot: WeeklyWorkspaceSnapshot = {
-          reportId: weeklyReport.reportId,
-          reportType: selectedReportType,
-          draftText: editableWeeklyDraft,
-          excludedSourceIds: excludedWeeklySourceIds,
-          saveMode: mode,
-          savedAt: new Date().toISOString()
-        };
-        localStorage.setItem(weeklyWorkspaceStorageKey(userId, weeklyReport.reportId), JSON.stringify(snapshot));
-        setWeeklyWorkspaceStatus({ mode, savedAt: snapshot.savedAt, storage: 'local' });
-        setWeeklyDraftViewMode('workspace');
-      } finally {
-        setWeeklySaveState('error');
-      }
-    }
-  }
-
-  function showOriginalWeeklyDraft() {
-    if (!weeklyReport) {
-      return;
-    }
-    setExcludedWeeklySourceIds([]);
-    setEditableWeeklyDraft(buildWeeklyReportDraft(weeklyReport, selectedReportType, weeklyReport.threadSummaries));
-    setWeeklyDraftDirty(false);
-    setWeeklyDraftViewMode('original');
-    setWeeklySaveState('idle');
-  }
-
-  function showSavedWeeklyDraft() {
-    if (!weeklyReport) {
-      return;
-    }
-    void loadWeeklyWorkspace(weeklyReport.reportId);
-    setWeeklySaveState('idle');
-  }
-
-  async function resetWeeklyWorkspace() {
-    if (!weeklyReport) {
-      return;
-    }
-    await clearWeeklyWorkspace(weeklyReport.reportId);
-  }
-
-  async function clearWeeklyWorkspace(reportId: string) {
-    setWeeklyHistoryActionId(reportId);
-    setWeeklySaveState('idle');
-    try {
-      await archiveWeeklyReportWorkspace(reportId);
-      localStorage.removeItem(weeklyWorkspaceStorageKey(userId, reportId));
-      setWeeklyHistory((current) => updateWeeklyHistoryWorkspaceStatus(current, reportId, 'NONE'));
-      if (weeklyReport?.reportId === reportId) {
-        setExcludedWeeklySourceIds([]);
-        setEditableWeeklyDraft(buildWeeklyReportDraft(weeklyReport, selectedReportType, weeklyReport.threadSummaries));
-        setWeeklyDraftDirty(false);
-        setWeeklyWorkspaceStatus(null);
-        setWeeklyDraftViewMode('original');
-      }
-      setWeeklySaveState('draft-saved');
-    } catch {
-      setWeeklySaveState('error');
-    } finally {
-      setWeeklyHistoryActionId(null);
-    }
-  }
-
-  function toggleWeeklySource(emailId: string) {
-    setExcludedWeeklySourceIds((current) =>
-      current.includes(emailId) ? current.filter((id) => id !== emailId) : [...current, emailId]
-    );
-  }
-
-  function includeAllWeeklySources() {
-    setExcludedWeeklySourceIds([]);
-  }
-
-  function applySelectedSourcesToDraft() {
-    setEditableWeeklyDraft(weeklyDraftText);
-    setWeeklyDraftDirty(false);
-  }
-
-  function toggleWeeklyHistoryOpen() {
-    setWeeklyHistoryOpen((current) => !current);
-  }
-
-  function toggleWeeklySourcesOpen() {
-    setWeeklySourcesOpen((current) => !current);
-  }
-
-  function changeEditableWeeklyDraft(draft: string) {
-    setEditableWeeklyDraft(draft);
-    setWeeklyDraftDirty(true);
-  }
-
-  const history: WeeklyReportHistoryProps = {
-    loading: weeklyHistoryLoading,
-    items: weeklyHistory,
-    open: weeklyHistoryOpen,
-    actionId: weeklyHistoryActionId,
-    selectedReportId: selectedHistoryReportId,
-    onToggleOpen: toggleWeeklyHistoryOpen,
-    onOpenReport: openWeeklyReportFromHistory,
-    onCloseReport: closeWeeklyReportFromHistory,
-    onClearWorkspace: clearWeeklyWorkspace
-  };
-
-  const controls: WeeklyReportControlsProps = {
-    startDate: weeklyStartDate,
-    endDate: weeklyEndDate,
-    onReportTypeChange: setSelectedReportType,
-    onStartDateChange: setWeeklyStartDate,
-    onEndDateChange: setWeeklyEndDate,
-    onGenerateReport: generateWeeklyReport
-  };
+  const weeklyWorkspace = useWeeklyWorkspace({
+    userId,
+    weeklyReport,
+    selectedReportType,
+    editableWeeklyDraft,
+    excludedWeeklySourceIds,
+    setEditableWeeklyDraft,
+    setExcludedWeeklySourceIds,
+    setWeeklyDraftDirty,
+    setWeeklyWorkspaceStatus,
+    setWeeklyDraftViewMode,
+    setWeeklySaveState,
+    setWeeklyHistoryActionId,
+    updateHistoryWorkspaceStatus
+  });
 
   const draft: WeeklyReportDraftProps = {
     workspaceStatus: weeklyWorkspaceStatus,
@@ -412,11 +191,11 @@ export function useWeeklyReports({
     copyState: weeklyCopyState,
     saveState: weeklySaveState,
     text: editableWeeklyDraft,
-    onSaveWorkspace: saveWeeklyWorkspace,
-    onResetWorkspace: resetWeeklyWorkspace,
+    onSaveWorkspace: weeklyWorkspace.saveWeeklyWorkspace,
+    onResetWorkspace: weeklyWorkspace.resetWeeklyWorkspace,
     onCopyReport: copyWeeklyReportDraft,
-    onShowOriginal: showOriginalWeeklyDraft,
-    onShowSaved: showSavedWeeklyDraft,
+    onShowOriginal: weeklyWorkspace.showOriginalWeeklyDraft,
+    onShowSaved: weeklyWorkspace.showSavedWeeklyDraft,
     onChange: changeEditableWeeklyDraft
   };
 

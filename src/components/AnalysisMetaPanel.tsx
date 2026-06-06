@@ -1,6 +1,6 @@
 import type { AnalysisJob, EmailAnalysis } from '../types';
 import { formatDate } from '../utils/date';
-import { analysisJobStatusLabel } from '../utils/mailbox';
+import { analysisJobStatusLabel } from '../utils/mailAnalysisStatus';
 
 type AnalysisMetaPanelProps = {
   analysis: EmailAnalysis | null | undefined;

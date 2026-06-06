@@ -4,6 +4,7 @@ const navTitle: Record<NavView, string> = {
   home: '홈',
   weekly: '보고서 생성',
   allMail: '메일함',
+  mailDetail: '메일 상세',
   accounts: '메일 계정',
   settings: '설정'
 };

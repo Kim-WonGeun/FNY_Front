@@ -7,13 +7,13 @@ import type {
   EmailDetail,
   LoadState
 } from '../types';
+import { actionTypeLabel } from '../utils/mailboxLabels';
 import {
-  actionTypeLabel,
   canRequestAnalysis,
   getLatestAnalysisJob,
   isAgentReady,
   resolveAnalysisStatus
-} from '../utils/mailbox';
+} from '../utils/mailAnalysisStatus';
 import { AnalysisCandidatePanel } from './AnalysisCandidatePanel';
 import { AnalysisFeedbackPanel } from './AnalysisFeedbackPanel';
 import { AnalysisHistoryPanel } from './AnalysisHistoryPanel';

@@ -126,6 +126,35 @@ export function workspaceStatusFromResponse(workspace: WeeklyWorkspaceResponse):
   };
 }
 
+export function workspaceStatusFromSnapshot(snapshot: WeeklyWorkspaceSnapshot): WeeklyWorkspaceStatus {
+  return {
+    mode: snapshot.saveMode,
+    savedAt: snapshot.savedAt,
+    storage: 'local'
+  };
+}
+
+export function weeklySaveStateFromMode(mode: WeeklyWorkspaceSaveMode) {
+  return mode === 'draft' ? 'draft-saved' : 'saved';
+}
+
+export function createWeeklyWorkspaceSnapshot(
+  report: WeeklyReport,
+  reportType: ReportType,
+  draftText: string,
+  excludedSourceIds: string[],
+  saveMode: WeeklyWorkspaceSaveMode
+): WeeklyWorkspaceSnapshot {
+  return {
+    reportId: report.reportId,
+    reportType,
+    draftText,
+    excludedSourceIds,
+    saveMode,
+    savedAt: new Date().toISOString()
+  };
+}
+
 export function updateWeeklyHistoryWorkspaceStatus(
   items: WeeklyReportSummary[],
   reportId: string,

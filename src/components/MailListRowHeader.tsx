@@ -1,12 +1,11 @@
 import type { EmailListItem } from '../types';
 import { formatDate } from '../utils/date';
+import { attentionStatusLabel, isOpenAttentionStatus } from '../utils/mailAttention';
+import { analysisListHint } from '../utils/mailAnalysisCandidate';
 import {
-  analysisListHint,
-  attentionStatusLabel,
-  isOpenAttentionStatus,
   priorityDescription,
   priorityLabel
-} from '../utils/mailbox';
+} from '../utils/mailboxLabels';
 
 type MailListRowHeaderProps = {
   email: EmailListItem;

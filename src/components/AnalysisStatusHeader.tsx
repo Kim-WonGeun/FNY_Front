@@ -1,12 +1,12 @@
 import type { AgentHealth, AnalysisJob, AttentionStatus, EmailAnalysis, EmailDetail } from '../types';
+import { isOpenAttentionStatus } from '../utils/mailAttention';
 import {
   agentHealthLabel,
   agentHealthTone,
   analysisRequestButtonLabel,
   compactAnalysisStatusDescription,
-  isOpenAttentionStatus,
   resolveAnalysisStatus
-} from '../utils/mailbox';
+} from '../utils/mailAnalysisStatus';
 
 type AnalysisStatus = ReturnType<typeof resolveAnalysisStatus>;
 type ScoreItem = {

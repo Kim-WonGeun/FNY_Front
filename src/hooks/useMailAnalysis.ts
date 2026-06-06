@@ -22,10 +22,16 @@ import type {
   NavView
 } from '../types';
 import {
-  createDetailFromListItem,
-  isOpenAttentionStatus,
-  normalizeEmailDetail
-} from '../utils/mailbox';
+  updateDetailAttentionStatus,
+  updateEmailAttentionStatus
+} from '../utils/mailAttentionUpdates';
+import {
+  analysisFeedbackErrorMessage,
+  analysisFeedbackSavedMessage,
+  analysisFeedbackSavingMessage
+} from '../utils/analysisFeedback';
+import { createDetailFromListItem } from '../utils/mailContent';
+import { normalizeEmailDetail } from '../utils/mailNormalizers';
 
 type UseMailAnalysisOptions = {
   authSession: AuthSession | null;
@@ -103,9 +109,9 @@ export function useMailAnalysis({
             allEmails.find((email) => email.id === emailId)
         ) ?? sampleDetails[emailId];
       setEmailDetail(
-        authSession && localFallback && localFallback.id === emailId
+        localFallback && localFallback.id === emailId
           ? localFallback
-          : sampleDetails[emailId] ?? localFallback
+          : null
       );
       setDetailLoadState('fallback');
       setDetailErrorMessage(
@@ -164,32 +170,22 @@ export function useMailAnalysis({
   }
 
   async function saveAnalysisFeedback(analysisId: string, feedbackType: AnalysisFeedbackType) {
-    const accepted = feedbackType === 'ACCEPTED';
     setAnalysisFeedbackSavingId(analysisId);
     setAnalysisFeedbackMessages((current) => ({
       ...current,
-      [analysisId]: {
-        tone: 'success',
-        text: accepted ? '긍정 피드백을 저장하는 중입니다.' : '수정 필요 피드백을 저장하는 중입니다.'
-      }
+      [analysisId]: analysisFeedbackSavingMessage(feedbackType)
     }));
 
     try {
       await saveEmailAnalysisFeedback(analysisId, userId, feedbackType);
       setAnalysisFeedbackMessages((current) => ({
         ...current,
-        [analysisId]: {
-          tone: 'success',
-          text: accepted ? '분석이 맞다는 피드백을 저장했습니다.' : '수정 필요 피드백을 저장했습니다.'
-        }
+        [analysisId]: analysisFeedbackSavedMessage(feedbackType)
       }));
     } catch (error) {
       setAnalysisFeedbackMessages((current) => ({
         ...current,
-        [analysisId]: {
-          tone: 'error',
-          text: error instanceof Error ? error.message : '피드백 저장에 실패했습니다.'
-        }
+        [analysisId]: analysisFeedbackErrorMessage(error)
       }));
     } finally {
       setAnalysisFeedbackSavingId(null);
@@ -222,34 +218,15 @@ export function useMailAnalysis({
   }
 
   function applyAttentionStatusState(emailId: string, status: AttentionStatus, updatedAt?: string | null) {
-    const resolved = !isOpenAttentionStatus(status);
-    const nextUpdatedAt = resolved ? updatedAt ?? new Date().toISOString() : null;
-    const update = (email: EmailListItem): EmailListItem =>
-      email.id === emailId
-        ? {
-            ...email,
-            attentionResolved: resolved,
-            attentionResolvedAt: nextUpdatedAt,
-            attentionStatus: status,
-            attentionStatusUpdatedAt: nextUpdatedAt
-          }
-        : email;
-
     setOverview((current) => ({
       ...current,
-      spotlightEmails: current.spotlightEmails.map(update)
+      spotlightEmails: current.spotlightEmails.map((email) =>
+        updateEmailAttentionStatus(email, emailId, status, updatedAt)
+      )
     }));
-    setAllEmails((current) => current.map(update));
+    setAllEmails((current) => current.map((email) => updateEmailAttentionStatus(email, emailId, status, updatedAt)));
     setEmailDetail((current) =>
-      current?.id === emailId
-        ? {
-            ...current,
-            attentionResolved: resolved,
-            attentionResolvedAt: nextUpdatedAt,
-            attentionStatus: status,
-            attentionStatusUpdatedAt: nextUpdatedAt
-          }
-        : current
+      updateDetailAttentionStatus(current, emailId, status, updatedAt)
     );
   }
 

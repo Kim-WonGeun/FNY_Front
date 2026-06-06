@@ -1,6 +1,6 @@
 import type { AuthSession, LoadState, MailAccountSummary } from '../types';
 import { formatDate } from '../utils/date';
-import { providerLabel, syncStatusLabel } from '../utils/mailbox';
+import { providerLabel, syncStatusLabel } from '../utils/mailboxLabels';
 
 export function AccountsPage({
   authSession,

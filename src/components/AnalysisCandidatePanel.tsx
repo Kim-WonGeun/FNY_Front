@@ -1,10 +1,10 @@
 import type { EmailDetail } from '../types';
+import { analysisCandidateExplanation } from '../utils/mailAnalysisCandidate';
 import {
-  analysisCandidateExplanation,
   candidateReasonDescription,
   candidateReasonLabel,
   parseCandidateReasons
-} from '../utils/mailbox';
+} from '../utils/mailboxLabels';
 
 type AnalysisCandidatePanelProps = {
   detail: EmailDetail;

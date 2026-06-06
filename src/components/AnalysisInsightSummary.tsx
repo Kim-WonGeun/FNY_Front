@@ -1,14 +1,16 @@
 import type { EmailDetail } from '../types';
 import {
-  analysisCandidateExplanation,
   attentionStatusDescription,
   attentionStatusLabel,
+  isOpenAttentionStatus
+} from '../utils/mailAttention';
+import { analysisCandidateExplanation } from '../utils/mailAnalysisCandidate';
+import {
   candidateReasonLabel,
-  isOpenAttentionStatus,
   parseCandidateReasons,
   priorityReasonLabel,
   timeSensitivityLabel
-} from '../utils/mailbox';
+} from '../utils/mailboxLabels';
 
 type AnalysisInsightSummaryProps = {
   detail: EmailDetail;
