@@ -5,6 +5,7 @@ import type {
   MailAccountSummary,
   MailboxOverview
 } from '../types';
+import { apiFetch } from './client';
 import { readApiError, type ApiErrorParser } from './errors';
 
 export type EmailSearchParams = {
@@ -16,7 +17,7 @@ export type EmailSearchParams = {
 };
 
 export async function fetchMailboxOverview(parseApiError: ApiErrorParser) {
-  const response = await fetch('/api/me/overview');
+  const response = await apiFetch('/api/me/overview');
 
   if (!response.ok) {
     throw await parseApiError(response);
@@ -26,7 +27,7 @@ export async function fetchMailboxOverview(parseApiError: ApiErrorParser) {
 }
 
 export async function fetchMailAccounts() {
-  const response = await fetch('/api/me/mail-accounts');
+  const response = await apiFetch('/api/me/mail-accounts');
 
   if (!response.ok) {
     throw new Error(await readApiError(response));
@@ -55,7 +56,7 @@ export async function fetchAllEmails(search: EmailSearchParams, parseApiError: A
   }
 
   const queryString = params.toString();
-  const response = await fetch(queryString ? `/api/me/emails?${queryString}` : '/api/me/emails');
+  const response = await apiFetch(queryString ? `/api/me/emails?${queryString}` : '/api/me/emails');
 
   if (!response.ok) {
     throw await parseApiError(response);
@@ -65,17 +66,17 @@ export async function fetchAllEmails(search: EmailSearchParams, parseApiError: A
 }
 
 export async function fetchEmailDetail(emailId: string, signal: AbortSignal) {
-  const response = await fetch(`/api/emails/${emailId}`, { signal });
+  const response = await apiFetch(`/api/emails/${emailId}`, { signal });
 
   if (!response.ok) {
-    throw new Error(`API returned ${response.status}`);
+    throw new Error(await readApiError(response));
   }
 
   return (await response.json()) as EmailDetail;
 }
 
 export async function fetchEmailAnalysisHistory(emailId: string) {
-  const response = await fetch(`/api/emails/${emailId}/analyses`);
+  const response = await apiFetch(`/api/emails/${emailId}/analyses`);
 
   if (!response.ok) {
     throw new Error(await readApiError(response));

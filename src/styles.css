@@ -1129,7 +1129,7 @@ button {
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
   box-shadow: none;
-  padding: 18px;
+  padding: 16px;
 }
 
 .mailbox-card {
@@ -1578,10 +1578,10 @@ button {
 
 .weekly-panel-head {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 14px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .weekly-panel-head h5 {
@@ -1598,6 +1598,8 @@ button {
 }
 
 .weekly-draft-card {
+  display: grid;
+  gap: 10px;
   padding: 0;
   background: transparent;
 }
@@ -1660,6 +1662,57 @@ button {
   margin-left: auto;
 }
 
+.weekly-draft-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  width: fit-content;
+  gap: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: var(--color-surface-subtle);
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.weekly-draft-status strong {
+  color: var(--color-text);
+}
+
+.weekly-draft-status span {
+  color: var(--color-text-subtle);
+  font-weight: 700;
+}
+
+.weekly-draft-status-success {
+  border-color: var(--color-success-text);
+  background: var(--color-success-bg);
+}
+
+.weekly-draft-status-success strong {
+  color: var(--color-success-text);
+}
+
+.weekly-draft-status-warning {
+  border-color: var(--color-warning-text);
+  background: var(--color-warning-bg);
+}
+
+.weekly-draft-status-warning strong {
+  color: var(--color-warning-text);
+}
+
+.weekly-draft-status-error {
+  border-color: var(--color-danger-text);
+  background: var(--color-danger-bg);
+}
+
+.weekly-draft-status-error strong {
+  color: var(--color-danger-text);
+}
+
 .weekly-draft-actions .btn-weekly:last-child {
   border-color: var(--color-primary);
   background: var(--color-primary);
@@ -1689,7 +1742,7 @@ button {
 }
 
 .weekly-copy-status {
-  margin: 0 0 10px;
+  margin: 0;
   font-size: 0.8rem;
   color: var(--color-success-text);
 }
@@ -1699,7 +1752,7 @@ button {
 }
 
 .weekly-workspace-status {
-  margin: 0 0 10px;
+  margin: 0;
   font-size: 0.78rem;
   color: var(--color-text-subtle);
 }
@@ -2219,6 +2272,101 @@ button {
   color: var(--color-primary-hover);
 }
 
+.mailbox-active-filters {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  background: var(--color-surface);
+}
+
+.mailbox-empty-panel {
+  display: grid;
+  min-height: 100%;
+  place-items: center;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-subtle);
+}
+
+.mailbox-active-filters-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.mailbox-active-filters-head span {
+  color: var(--color-text-subtle);
+  font-size: 0.76rem;
+  font-weight: 900;
+}
+
+.mailbox-active-filters-head button {
+  min-height: 26px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 0 9px;
+  background: var(--color-surface-subtle);
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.mailbox-active-filters-head button:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary-hover);
+}
+
+.mailbox-active-filter-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.mailbox-active-filter-list button {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 30px;
+  gap: 6px;
+  border: 1px solid var(--color-primary);
+  border-radius: 999px;
+  padding: 0 9px;
+  background: var(--color-primary-soft);
+  color: var(--color-primary-hover);
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.mailbox-active-filter-list button:hover {
+  background: var(--color-surface-hover);
+}
+
+.mailbox-active-filter-list span {
+  color: var(--color-text-muted);
+  font-weight: 800;
+}
+
+.mailbox-active-filter-list strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-primary-hover);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mailbox-active-filter-list em {
+  color: var(--color-text-muted);
+  font-style: normal;
+  font-weight: 900;
+}
+
 .list-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -2275,7 +2423,11 @@ button {
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  margin: -4px 0 12px;
+  margin: -2px 0 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  background: var(--color-surface-subtle);
 }
 
 .mailbox-date-search {
@@ -2459,6 +2611,7 @@ button {
   height: 341px;
   min-height: 0;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .mail-calendar-head {
@@ -2646,6 +2799,7 @@ button {
   max-height: none;
   min-height: 0;
   overflow-y: auto;
+  padding-right: 2px;
 }
 
 .mail-calendar-list .mail-list-item {
@@ -3346,9 +3500,9 @@ h3 {
 
 .analysis-status-card-compact .analysis-status-topline {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  align-items: center;
-  gap: 8px;
+  grid-template-columns: minmax(160px, 1fr) minmax(0, auto);
+  align-items: start;
+  gap: 10px;
 }
 
 .analysis-status-main {
@@ -3417,10 +3571,19 @@ h3 {
   max-width: 48%;
 }
 
+.analysis-status-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
+}
+
 .analysis-status-card-compact .analysis-score-strip {
-  grid-column: 3;
-  grid-row: 1;
   max-width: none;
+  flex: 0 0 auto;
+  gap: 6px;
 }
 
 .analysis-status-card-compact .score-compact {
@@ -3669,23 +3832,36 @@ h3 {
 .attention-status-actions {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   justify-content: flex-end;
   gap: 6px;
 }
 
 .analysis-status-card-compact .attention-status-actions {
-  grid-column: 2;
-  grid-row: 1;
   align-self: center;
   justify-content: flex-end;
   flex-wrap: nowrap;
+  flex: 0 1 auto;
   max-width: none;
+  min-width: 0;
+}
+
+.attention-current-state {
+  flex: 0 0 auto;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 7px 10px;
+  background: var(--color-surface-subtle);
+  color: var(--color-text);
+  font-size: 0.76rem;
+  font-weight: 900;
+  white-space: nowrap;
 }
 
 .analysis-status-card-compact .attention-resolve-btn,
 .analysis-status-card-compact .analysis-request-btn {
   min-height: 32px;
-  padding: 0 12px;
+  padding: 0 10px;
   white-space: nowrap;
 }
 
@@ -4577,6 +4753,17 @@ h3 {
   .analysis-job-meta,
   .score-grid {
     grid-template-columns: 1fr;
+  }
+
+  .analysis-status-card-compact .analysis-status-topline {
+    grid-template-columns: 1fr;
+  }
+
+  .analysis-status-controls,
+  .analysis-status-card-compact .attention-status-actions,
+  .analysis-status-card-compact .analysis-score-strip {
+    justify-content: flex-start;
+    width: 100%;
   }
 
   .attention-resolve-panel {

@@ -1,16 +1,12 @@
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 import {
   createEmailAnalysisJob,
-  fetchAgentHealth,
-  patchAttentionStatus,
-  saveEmailAnalysisFeedback
+  patchAttentionStatus
 } from '../api/analysis';
-import { fetchEmailAnalysisHistory, fetchEmailDetail } from '../api/mailbox';
-import { sampleDetails } from '../data/sampleMailbox';
+import { fetchEmailDetail } from '../api/mailbox';
 import type {
   AgentHealth,
   AnalysisFeedbackMessage,
-  AnalysisFeedbackType,
   AttentionStatus,
   AuthSession,
   DetailLoadState,
@@ -26,12 +22,18 @@ import {
   updateEmailAttentionStatus
 } from '../utils/mailAttentionUpdates';
 import {
-  analysisFeedbackErrorMessage,
-  analysisFeedbackSavedMessage,
-  analysisFeedbackSavingMessage
-} from '../utils/analysisFeedback';
-import { createDetailFromListItem } from '../utils/mailContent';
+  detailLoadErrorMessage,
+  findDetailFallback
+} from '../utils/mailDetailLoading';
+import { toEmailListItem } from '../utils/mailDetail';
+import {
+  updateOverviewSpotlightEmail,
+  upsertEmailListItem
+} from '../utils/mailListUpdates';
 import { normalizeEmailDetail } from '../utils/mailNormalizers';
+import { useAgentHealthLoader } from './useAgentHealthLoader';
+import { useAnalysisFeedback } from './useAnalysisFeedback';
+import { useAnalysisHistoryLoader } from './useAnalysisHistoryLoader';
 
 type UseMailAnalysisOptions = {
   authSession: AuthSession | null;
@@ -82,6 +84,18 @@ export function useMailAnalysis({
   loadOverview,
   loadAllEmails
 }: UseMailAnalysisOptions) {
+  const { saveAnalysisFeedback } = useAnalysisFeedback({
+    userId,
+    setAnalysisFeedbackSavingId,
+    setAnalysisFeedbackMessages
+  });
+  const { loadAnalysisHistory } = useAnalysisHistoryLoader({
+    analysisHistoryState,
+    setAnalysisHistory,
+    setAnalysisHistoryState
+  });
+  const { loadAgentHealth } = useAgentHealthLoader({ setAgentHealth });
+
   async function loadEmailDetail(emailId: string) {
     const requestSeq = detailRequestSeq.current + 1;
     detailRequestSeq.current = requestSeq;
@@ -97,55 +111,28 @@ export function useMailAnalysis({
       if (requestSeq !== detailRequestSeq.current) {
         return;
       }
-      setEmailDetail(normalizeEmailDetail(data));
+      const detail = normalizeEmailDetail(data);
+      const listItem = toEmailListItem(detail);
+      setEmailDetail(detail);
+      setAllEmails((current) => upsertEmailListItem(current, listItem));
+      setOverview((current) => updateOverviewSpotlightEmail(current, listItem));
       setDetailLoadState('ready');
     } catch (error) {
       if (requestSeq !== detailRequestSeq.current) {
         return;
       }
-      const localFallback =
-        createDetailFromListItem(
-          sortedEmails.find((email) => email.id === emailId) ??
-            allEmails.find((email) => email.id === emailId)
-        ) ?? sampleDetails[emailId];
-      setEmailDetail(
-        localFallback && localFallback.id === emailId
-          ? localFallback
-          : null
-      );
+      setEmailDetail(findDetailFallback(emailId, sortedEmails, allEmails));
       setDetailLoadState('fallback');
-      setDetailErrorMessage(
-        error instanceof DOMException && error.name === 'AbortError'
-          ? '메일 상세 요청 시간이 초과되었습니다.'
-          : error instanceof Error
-            ? error.message
-            : 'Unknown error'
-      );
+      setDetailErrorMessage(detailLoadErrorMessage(error));
     } finally {
       window.clearTimeout(timeoutId);
     }
   }
 
-  async function loadAnalysisHistory(emailId: string) {
-    if (analysisHistoryState[emailId] === 'loading') {
-      return;
-    }
-    setAnalysisHistoryState((current) => ({ ...current, [emailId]: 'loading' }));
-    try {
-      const history = await fetchEmailAnalysisHistory(emailId);
-      setAnalysisHistory((current) => ({ ...current, [emailId]: history }));
-      setAnalysisHistoryState((current) => ({ ...current, [emailId]: 'ready' }));
-    } catch {
-      setAnalysisHistoryState((current) => ({ ...current, [emailId]: 'error' }));
-    }
-  }
-
-  async function loadAgentHealth() {
-    try {
-      const data = await fetchAgentHealth();
-      setAgentHealth(data);
-    } catch {
-      setAgentHealth(null);
+  async function refreshMailboxes() {
+    await loadOverview(userId);
+    if (navView === 'allMail') {
+      await loadAllEmails(userId);
     }
   }
 
@@ -158,37 +145,11 @@ export function useMailAnalysis({
       setSyncState('ready');
       await loadAgentHealth();
       await loadEmailDetail(emailId);
-      await loadOverview(userId);
-      if (navView === 'allMail') {
-        await loadAllEmails(userId);
-      }
+      await refreshMailboxes();
     } catch {
       setSyncState('error');
     } finally {
       setAnalysisRequestingId(null);
-    }
-  }
-
-  async function saveAnalysisFeedback(analysisId: string, feedbackType: AnalysisFeedbackType) {
-    setAnalysisFeedbackSavingId(analysisId);
-    setAnalysisFeedbackMessages((current) => ({
-      ...current,
-      [analysisId]: analysisFeedbackSavingMessage(feedbackType)
-    }));
-
-    try {
-      await saveEmailAnalysisFeedback(analysisId, userId, feedbackType);
-      setAnalysisFeedbackMessages((current) => ({
-        ...current,
-        [analysisId]: analysisFeedbackSavedMessage(feedbackType)
-      }));
-    } catch (error) {
-      setAnalysisFeedbackMessages((current) => ({
-        ...current,
-        [analysisId]: analysisFeedbackErrorMessage(error)
-      }));
-    } finally {
-      setAnalysisFeedbackSavingId(null);
     }
   }
 
@@ -202,15 +163,9 @@ export function useMailAnalysis({
       setEmailDetail(detail);
       applyAttentionStatusState(emailId, detail.attentionStatus, detail.attentionStatusUpdatedAt);
       setSyncState('ready');
-      await loadOverview(userId);
-      if (navView === 'allMail') {
-        await loadAllEmails(userId);
-      }
+      await refreshMailboxes();
     } catch {
-      await loadOverview(userId);
-      if (navView === 'allMail') {
-        await loadAllEmails(userId);
-      }
+      await refreshMailboxes();
       setSyncState('error');
     } finally {
       setAttentionUpdatingId(null);

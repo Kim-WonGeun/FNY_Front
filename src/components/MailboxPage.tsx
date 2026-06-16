@@ -1,4 +1,3 @@
-import { ALL_MAIL_PAGE_SIZE } from '../constants';
 import type {
   AgentHealth,
   AnalysisFeedbackMessage,
@@ -13,13 +12,13 @@ import type {
   MailboxCategory,
   MailboxDatePreset
 } from '../types';
-import { PaginationBar } from './common';
-import { MailboxAdvancedSearch } from './MailboxAdvancedSearch';
-import { MailboxDateFilter } from './MailboxDateFilter';
+import {
+  hasAnyMailboxFilter,
+  hasMailboxSearchFilter
+} from '../utils/mailboxFilterState';
+import { MailboxControlsPanel } from './MailboxControlsPanel';
 import { MailboxEmailList } from './MailboxEmailList';
-import { MailboxFilterBar } from './MailboxFilterBar';
 import { MailboxLoadStatus } from './MailboxLoadStatus';
-import { MailboxToolbar } from './MailboxToolbar';
 
 export type MailboxPageProps = {
   loadState: LoadState;
@@ -130,57 +129,41 @@ export function MailboxPage({
   onToggleEmailDetail,
   onScrollTopChange
 }: MailboxPageProps) {
-  const hasAnyFilter = Boolean(
-    category !== 'all' || analysisFilter !== 'all' || query.trim() || senderQuery.trim() || startDate || endDate
-  );
-  const hasSearchFilter = Boolean(query.trim() || senderQuery.trim() || startDate || endDate);
+  const filterState = { category, analysisFilter, query, senderQuery, startDate, endDate, searchBody };
 
   return (
     <div className="page-card mailbox-card" aria-label="메일함">
       <MailboxLoadStatus state={loadState} totalEmails={allEmailsCount} errorMessage={errorMessage} />
 
-      <MailboxFilterBar
+      <MailboxControlsPanel
         category={category}
         analysisFilter={analysisFilter}
         statusFilterOpen={statusFilterOpen}
         mailboxCounts={mailboxCounts}
         analysisCounts={analysisCounts}
-        onCategoryChange={onCategoryChange}
-        onAnalysisFilterChange={onAnalysisFilterChange}
-        onStatusFilterOpenChange={onStatusFilterOpenChange}
-      />
-
-      <MailboxToolbar advancedSearchOpen={advancedSearchOpen} onAdvancedSearchOpenChange={onAdvancedSearchOpenChange} />
-
-      <MailboxDateFilter
+        advancedSearchOpen={advancedSearchOpen}
         query={query}
+        senderQuery={senderQuery}
         datePreset={datePreset}
         startDate={startDate}
         endDate={endDate}
-        onQueryChange={onQueryChange}
-        onDatePresetChange={onDatePresetChange}
-      />
-
-      {advancedSearchOpen ? (
-        <MailboxAdvancedSearch
-          senderQuery={senderQuery}
-          startDate={startDate}
-          endDate={endDate}
-          searchBody={searchBody}
-          onSenderQueryChange={onSenderQueryChange}
-          onStartDateChange={onStartDateChange}
-          onEndDateChange={onEndDateChange}
-          onSearchBodyChange={onSearchBodyChange}
-          onReset={onSearchReset}
-        />
-      ) : null}
-
-      <PaginationBar
+        searchBody={searchBody}
         page={page}
         totalPages={totalPages}
-        totalItems={filteredCount}
-        pageSize={ALL_MAIL_PAGE_SIZE}
+        filteredCount={filteredCount}
+        onCategoryChange={onCategoryChange}
+        onAnalysisFilterChange={onAnalysisFilterChange}
+        onStatusFilterOpenChange={onStatusFilterOpenChange}
+        onAdvancedSearchOpenChange={onAdvancedSearchOpenChange}
+        onQueryChange={onQueryChange}
+        onDatePresetChange={onDatePresetChange}
+        onSenderQueryChange={onSenderQueryChange}
+        onStartDateChange={onStartDateChange}
+        onEndDateChange={onEndDateChange}
+        onSearchBodyChange={onSearchBodyChange}
+        onSearchReset={onSearchReset}
         onPageChange={onPageChange}
+        onResetFilters={onResetFilters}
       />
 
       <MailboxEmailList
@@ -193,8 +176,8 @@ export function MailboxPage({
         attentionUpdatingId={attentionUpdatingId}
         detailErrorMessage={detailErrorMessage}
         detailLoadState={detailLoadState}
-        hasAnyFilter={hasAnyFilter}
-        hasSearchFilter={hasSearchFilter}
+        hasAnyFilter={hasAnyMailboxFilter(filterState)}
+        hasSearchFilter={hasMailboxSearchFilter(filterState)}
         originalMailDefaultOpen={originalMailDefaultOpen}
         page={page}
         pagedEmails={pagedEmails}

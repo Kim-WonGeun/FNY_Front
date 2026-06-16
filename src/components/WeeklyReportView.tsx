@@ -65,6 +65,7 @@ export function WeeklyReportView({
 
       <WeeklyDraftEditor
         reportType={reportType}
+        weeklyDraftDirty={draftDirty}
         weeklyWorkspaceStatus={draft.workspaceStatus}
         weeklyDraftViewMode={draft.viewMode}
         weeklyCopyState={draft.copyState}

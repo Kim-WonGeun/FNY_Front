@@ -4,6 +4,7 @@ import type {
   WeeklyReportSummary,
   WeeklyWorkspaceResponse
 } from '../types';
+import { apiFetch } from './client';
 import { readApiError, type ApiErrorParser } from './errors';
 
 export type WeeklyReportCreateRequest = {
@@ -19,7 +20,7 @@ export type WeeklyWorkspaceSaveRequest = {
 };
 
 export async function fetchWeeklyReports(mailAccountId: string, parseApiError: ApiErrorParser) {
-  const response = await fetch(`/api/me/mail-accounts/${mailAccountId}/weekly-reports`);
+  const response = await apiFetch(`/api/me/mail-accounts/${mailAccountId}/weekly-reports`);
 
   if (!response.ok) {
     throw await parseApiError(response);
@@ -29,7 +30,7 @@ export async function fetchWeeklyReports(mailAccountId: string, parseApiError: A
 }
 
 export async function fetchWeeklyReport(reportId: string, parseApiError: ApiErrorParser) {
-  const response = await fetch(`/api/me/weekly-reports/${reportId}`);
+  const response = await apiFetch(`/api/me/weekly-reports/${reportId}`);
 
   if (!response.ok) {
     throw await parseApiError(response);
@@ -48,7 +49,7 @@ export async function createWeeklyReport(
     startDate: request.startDate,
     endDate: request.endDate
   });
-  const response = await fetch(`/api/me/mail-accounts/${mailAccountId}/weekly-reports?${params.toString()}`, {
+  const response = await apiFetch(`/api/me/mail-accounts/${mailAccountId}/weekly-reports?${params.toString()}`, {
     method: 'POST'
   });
 
@@ -60,7 +61,7 @@ export async function createWeeklyReport(
 }
 
 export async function fetchWeeklyWorkspace(reportId: string) {
-  const response = await fetch(`/api/me/weekly-reports/${reportId}/workspace`);
+  const response = await apiFetch(`/api/me/weekly-reports/${reportId}/workspace`);
 
   if (response.status === 204) {
     return null;
@@ -73,7 +74,7 @@ export async function fetchWeeklyWorkspace(reportId: string) {
 }
 
 export async function saveWeeklyReportWorkspace(reportId: string, request: WeeklyWorkspaceSaveRequest) {
-  const response = await fetch(`/api/me/weekly-reports/${reportId}/workspace`, {
+  const response = await apiFetch(`/api/me/weekly-reports/${reportId}/workspace`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(request)
@@ -87,7 +88,7 @@ export async function saveWeeklyReportWorkspace(reportId: string, request: Weekl
 }
 
 export async function archiveWeeklyReportWorkspace(reportId: string) {
-  const response = await fetch(`/api/me/weekly-reports/${reportId}/workspace/status`, {
+  const response = await apiFetch(`/api/me/weekly-reports/${reportId}/workspace/status`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ saveStatus: 'ARCHIVED' })

@@ -1,5 +1,5 @@
 import type { AgentHealth, AnalysisJob, AttentionStatus, EmailAnalysis, EmailDetail } from '../types';
-import { isOpenAttentionStatus } from '../utils/mailAttention';
+import { attentionStatusLabel, isOpenAttentionStatus } from '../utils/mailAttention';
 import {
   agentHealthLabel,
   agentHealthTone,
@@ -51,56 +51,62 @@ export function AnalysisStatusHeader({
         <span className={`analysis-status-badge analysis-status-${status.tone}`}>{status.label}</span>
         <p>{compact ? compactAnalysisStatusDescription(status, latestJob, analysis) : status.description}</p>
       </div>
-      {detail ? (
-        <div className="attention-status-actions">
-          {isOpenAttentionStatus(detail.attentionStatus) ? (
-            <>
-              <button
-                type="button"
-                className="attention-resolve-btn"
-                onClick={() => onUpdateAttentionStatus('REVIEWED')}
-                disabled={!canUpdateAttention}
-              >
-                확인 완료
+      {detail || scoreItems.length > 0 ? (
+        <div className="analysis-status-controls">
+          {detail ? (
+            <div className="attention-status-actions">
+              <span className="attention-current-state">
+                {attentionUpdating ? '상태 저장 중' : attentionStatusLabel(detail.attentionStatus)}
+              </span>
+              {isOpenAttentionStatus(detail.attentionStatus) ? (
+                <>
+                  <button
+                    type="button"
+                    className="attention-resolve-btn"
+                    onClick={() => onUpdateAttentionStatus('REVIEWED')}
+                    disabled={!canUpdateAttention}
+                  >
+                    확인 완료
+                  </button>
+                  <button
+                    type="button"
+                    className="attention-resolve-btn"
+                    onClick={() => onUpdateAttentionStatus('COMPLETED')}
+                    disabled={!canUpdateAttention}
+                  >
+                    처리 완료
+                  </button>
+                  <button
+                    type="button"
+                    className="attention-resolve-btn attention-resolve-secondary"
+                    onClick={() => onUpdateAttentionStatus('DEFERRED')}
+                    disabled={!canUpdateAttention}
+                  >
+                    보류
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  className="attention-resolve-btn attention-resolve-secondary"
+                  onClick={() => onUpdateAttentionStatus('NEEDS_ATTENTION')}
+                  disabled={!canUpdateAttention}
+                >
+                  다시 표시
+                </button>
+              )}
+              <button type="button" className="analysis-request-btn" onClick={onRequest} disabled={!canRequest}>
+                {analysisRequestButtonLabel(detail, agentHealth, status.label, submitting)}
               </button>
-              <button
-                type="button"
-                className="attention-resolve-btn"
-                onClick={() => onUpdateAttentionStatus('COMPLETED')}
-                disabled={!canUpdateAttention}
-              >
-                처리 완료
-              </button>
-              <button
-                type="button"
-                className="attention-resolve-btn attention-resolve-secondary"
-                onClick={() => onUpdateAttentionStatus('DEFERRED')}
-                disabled={!canUpdateAttention}
-              >
-                보류
-              </button>
-            </>
-          ) : (
-            <button
-              type="button"
-              className="attention-resolve-btn attention-resolve-secondary"
-              onClick={() => onUpdateAttentionStatus('NEEDS_ATTENTION')}
-              disabled={!canUpdateAttention}
-            >
-              다시 표시
-            </button>
-          )}
-          <button type="button" className="analysis-request-btn" onClick={onRequest} disabled={!canRequest}>
-            {analysisRequestButtonLabel(detail, agentHealth, status.label, submitting)}
-          </button>
-          {attentionUpdating ? <span className="attention-saving-text">저장 중</span> : null}
-        </div>
-      ) : null}
-      {scoreItems.length > 0 ? (
-        <div className="analysis-score-strip" aria-label="분석 점수">
-          {scoreItems.map((item) => (
-            <Score key={item.label} label={item.label} value={item.value} compact />
-          ))}
+            </div>
+          ) : null}
+          {scoreItems.length > 0 ? (
+            <div className="analysis-score-strip" aria-label="분석 점수">
+              {scoreItems.map((item) => (
+                <Score key={item.label} label={item.label} value={item.value} compact />
+              ))}
+            </div>
+          ) : null}
         </div>
       ) : null}
     </div>

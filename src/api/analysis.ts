@@ -6,10 +6,11 @@ import type {
   EmailDetail,
   MailSyncResult
 } from '../types';
+import { apiFetch } from './client';
 import { readApiError } from './errors';
 
 export async function fetchAgentHealth() {
-  const response = await fetch('/api/agent/health');
+  const response = await apiFetch('/api/agent/health');
 
   if (!response.ok) {
     throw new Error(await readApiError(response));
@@ -19,7 +20,7 @@ export async function fetchAgentHealth() {
 }
 
 export async function createEmailAnalysisJob(emailId: string) {
-  const response = await fetch(`/api/emails/${emailId}/analysis-jobs`, { method: 'POST' });
+  const response = await apiFetch(`/api/emails/${emailId}/analysis-jobs`, { method: 'POST' });
 
   if (!response.ok) {
     throw new Error(await readApiError(response));
@@ -34,7 +35,7 @@ export async function saveEmailAnalysisFeedback(
   feedbackType: AnalysisFeedbackType
 ) {
   const accepted = feedbackType === 'ACCEPTED';
-  const response = await fetch(`/api/email-analyses/${analysisId}/feedbacks/${userId}`, {
+  const response = await apiFetch(`/api/email-analyses/${analysisId}/feedbacks/${userId}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -50,7 +51,7 @@ export async function saveEmailAnalysisFeedback(
 }
 
 export async function patchAttentionStatus(emailId: string, status: AttentionStatus) {
-  const response = await fetch(`/api/emails/${emailId}/attention-status?status=${status}`, {
+  const response = await apiFetch(`/api/emails/${emailId}/attention-status?status=${status}`, {
     method: 'PATCH'
   });
 
@@ -62,7 +63,7 @@ export async function patchAttentionStatus(emailId: string, status: AttentionSta
 }
 
 export async function syncMailAccount(mailAccountId: string) {
-  const response = await fetch(`/api/me/mail-accounts/${mailAccountId}/sync?limit=0`, {
+  const response = await apiFetch(`/api/me/mail-accounts/${mailAccountId}/sync?limit=0`, {
     method: 'POST'
   });
 

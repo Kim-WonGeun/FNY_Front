@@ -8,7 +8,7 @@ export function getAnalysisQueueCounts(emails: EmailListItem[]) {
       (email) => email.analysisEligible && isOpenAttentionStatus(email.attentionStatus)
     ).length,
     excluded: evaluated.filter((email) => !email.analysisEligible).length,
-    done: evaluated.filter((email) => !isOpenAttentionStatus(email.attentionStatus)).length
+    done: emails.filter((email) => !isOpenAttentionStatus(email.attentionStatus)).length
   };
 }
 
@@ -18,7 +18,7 @@ export function getAnalysisQueueEmails(emails: EmailListItem[], filter: Analysis
     return evaluated.filter((email) => !email.analysisEligible);
   }
   if (filter === 'done') {
-    return evaluated.filter((email) => !isOpenAttentionStatus(email.attentionStatus));
+    return emails.filter((email) => !isOpenAttentionStatus(email.attentionStatus));
   }
   return evaluated.filter(
     (email) => email.analysisEligible && isOpenAttentionStatus(email.attentionStatus)

@@ -7,6 +7,7 @@ export function useHomeDashboardControls() {
   const [listQuery, setListQuery] = useState('');
   const [calendarMonth, setCalendarMonth] = useState(() => todayKey().slice(0, 7));
   const [selectedCalendarDate, setSelectedCalendarDate] = useState(todayKey());
+  const [calendarListScrollTop, setCalendarListScrollTop] = useState(0);
   const [calendarPickerOpen, setCalendarPickerOpen] = useState(false);
   const [analysisQueueFilter, setAnalysisQueueFilter] = useState<AnalysisQueueFilter>('candidate');
 
@@ -14,11 +15,13 @@ export function useHomeDashboardControls() {
     analysisQueueFilter,
     calendarMonth,
     calendarPickerOpen,
+    calendarListScrollTop,
     listQuery,
     selectedCalendarDate,
     setAnalysisQueueFilter,
     setCalendarMonth,
     setCalendarPickerOpen,
+    setCalendarListScrollTop,
     setListQuery,
     setSelectedCalendarDate,
     setSpotlightFilter,

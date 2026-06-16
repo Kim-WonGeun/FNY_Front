@@ -27,6 +27,7 @@ export type HomeDashboardPageProps = {
   calendarYear: number;
   calendarMonthNumber: number;
   calendarPickerOpen: boolean;
+  calendarListScrollTop: number;
   calendarDays: Array<{
     dateKey: string;
     dayOfMonth: number;
@@ -49,6 +50,7 @@ export type HomeDashboardPageProps = {
   onCalendarPickerOpenChange: (open: boolean) => void;
   onCalendarMonthChange: (monthKey: string) => void;
   onCalendarDateSelect: (dateKey: string) => void;
+  onCalendarListScrollTopChange: (scrollTop: number) => void;
   onTodaySelect: () => void;
   onOpenEmail: (emailId: string, sequence?: EmailListItem[]) => void;
   onToggleEmailDetail: (emailId: string) => void;
@@ -70,6 +72,7 @@ export function HomeDashboardPage({
   calendarYear,
   calendarMonthNumber,
   calendarPickerOpen,
+  calendarListScrollTop,
   calendarDays,
   selectedCalendarDate,
   selectedCalendarEmails,
@@ -87,6 +90,7 @@ export function HomeDashboardPage({
   onCalendarPickerOpenChange,
   onCalendarMonthChange,
   onCalendarDateSelect,
+  onCalendarListScrollTopChange,
   onTodaySelect,
   onOpenEmail,
   onToggleEmailDetail,
@@ -126,12 +130,14 @@ export function HomeDashboardPage({
         calendarMonthNumber={calendarMonthNumber}
         calendarPickerOpen={calendarPickerOpen}
         calendarYear={calendarYear}
+        listScrollTop={calendarListScrollTop}
         renderEmail={(email, index, key) =>
           renderMailRow(email, index, false, () => onOpenEmail(email.id, selectedCalendarEmails), key)
         }
         selectedCalendarDate={selectedCalendarDate}
         selectedCalendarEmails={selectedCalendarEmails}
         onCalendarDateSelect={onCalendarDateSelect}
+        onListScrollTopChange={onCalendarListScrollTopChange}
         onCalendarMonthChange={onCalendarMonthChange}
         onCalendarPickerOpenChange={onCalendarPickerOpenChange}
         onTodaySelect={onTodaySelect}

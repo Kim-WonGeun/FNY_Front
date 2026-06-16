@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import type {
   AgentHealth,
   AnalysisFeedbackMessage,
@@ -10,10 +9,10 @@ import type {
   EmailListItem,
   LoadState
 } from '../types';
-import { formatDate } from '../utils/date';
-import { attentionStatusLabel } from '../utils/mailAttention';
+import { useMailDetailKeyboardNavigation } from '../hooks/useMailDetailKeyboardNavigation';
 import { analysisListHint } from '../utils/mailAnalysisCandidate';
-import { priorityLabel } from '../utils/mailboxLabels';
+import { buildDetailChips, toEmailListItem } from '../utils/mailDetail';
+import { MailDetailHeader } from './MailDetailHeader';
 import { MailInlineDetail } from './MailInlineDetail';
 
 export type MailDetailPageProps = {
@@ -68,27 +67,8 @@ export function MailDetailPage({
   const receivedAt = displayEmail?.receivedAt ?? detail?.receivedAt ?? '';
   const analysisHint = displayEmail ? analysisListHint(displayEmail) : null;
   const detailChips = displayEmail ? buildDetailChips(displayEmail, detail) : [];
-  const canMovePrevious = Boolean(previousEmail);
-  const canMoveNext = Boolean(nextEmail);
 
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.defaultPrevented || isEditableTarget(event.target)) {
-        return;
-      }
-      if (event.key === 'ArrowLeft' && previousEmail) {
-        event.preventDefault();
-        onOpenEmail(previousEmail.id);
-      }
-      if (event.key === 'ArrowRight' && nextEmail) {
-        event.preventDefault();
-        onOpenEmail(nextEmail.id);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [nextEmail, onOpenEmail, previousEmail]);
+  useMailDetailKeyboardNavigation({ nextEmail, previousEmail, onOpenEmail });
 
   return (
     <div className="mail-detail-page" aria-label="메일 상세">
@@ -114,53 +94,19 @@ export function MailDetailPage({
         </section>
       ) : (
         <section className="mail-detail-card">
-          <div className="mail-detail-toolbar">
-            <button type="button" className="mail-detail-back" onClick={onBack}>
-              메일 목록으로
-            </button>
-            <div className="mail-detail-toolbar-actions">
-              <button
-                type="button"
-                className="mail-detail-nav-btn"
-                onClick={() => previousEmail && onOpenEmail(previousEmail.id)}
-                disabled={!canMovePrevious}
-                title={previousEmail?.subject ?? '이전 메일이 없습니다'}
-              >
-                이전
-              </button>
-              <button
-                type="button"
-                className="mail-detail-nav-btn"
-                onClick={() => nextEmail && onOpenEmail(nextEmail.id)}
-                disabled={!canMoveNext}
-                title={nextEmail?.subject ?? '다음 메일이 없습니다'}
-              >
-                다음
-              </button>
-              {receivedAt ? <time dateTime={receivedAt}>{formatDate(receivedAt)}</time> : null}
-            </div>
-          </div>
-
-          <div className="mail-detail-head">
-            <div>
-              <p className="eyebrow">메일 상세</p>
-              <h2>{displayEmail?.subject || detail?.subject || '(제목 없음)'}</h2>
-              <p className="mail-detail-sender">
-                {displayEmail?.fromName ?? detail?.fromName ?? displayEmail?.fromEmail ?? detail?.fromEmail ?? '발신자 정보 없음'}
-                {(displayEmail?.fromEmail ?? detail?.fromEmail) ? (
-                  <span>{displayEmail?.fromEmail ?? detail?.fromEmail}</span>
-                ) : null}
-              </p>
-              {analysisHint ? <p className="mail-detail-hint">{analysisHint}</p> : null}
-              {detailChips.length > 0 ? (
-                <div className="mail-detail-chip-row" aria-label="메일 상태">
-                  {detailChips.map((chip) => (
-                    <span key={chip}>{chip}</span>
-                  ))}
-                </div>
-              ) : null}
-            </div>
-          </div>
+          {displayEmail ? (
+            <MailDetailHeader
+              analysisHint={analysisHint}
+              detail={detail}
+              detailChips={detailChips}
+              displayEmail={displayEmail}
+              nextEmail={nextEmail}
+              previousEmail={previousEmail}
+              receivedAt={receivedAt}
+              onBack={onBack}
+              onOpenEmail={onOpenEmail}
+            />
+          ) : null}
 
           {displayEmail ? (
             <MailInlineDetail
@@ -191,61 +137,4 @@ export function MailDetailPage({
       )}
     </div>
   );
-}
-
-function isEditableTarget(target: EventTarget | null) {
-  if (!(target instanceof HTMLElement)) {
-    return false;
-  }
-
-  const tagName = target.tagName.toLowerCase();
-  return tagName === 'input' || tagName === 'textarea' || tagName === 'select' || target.isContentEditable;
-}
-
-function buildDetailChips(email: EmailListItem, detail: EmailDetail | null) {
-  const chips = [
-    email.read ? '읽음' : '읽지 않음',
-    attentionStatusLabel(email.attentionStatus),
-    priorityLabel(email.priorityLevel ?? 'WAITING'),
-    email.analysisEligible ? '분석 대상' : '분석 제외'
-  ];
-
-  if (email.hasAttachment || detail?.hasAttachment) {
-    chips.push('첨부 있음');
-  }
-  if (detail?.provider) {
-    chips.push(detail.provider);
-  }
-
-  return chips;
-}
-
-function toEmailListItem(detail: EmailDetail): EmailListItem {
-  return {
-    id: detail.id,
-    subject: detail.subject,
-    snippet: detail.snippet,
-    fromName: detail.fromName,
-    fromEmail: detail.fromEmail,
-    receivedAt: detail.receivedAt,
-    read: detail.read,
-    starred: detail.starred,
-    hasAttachment: detail.hasAttachment,
-    category: detail.analysis?.category ?? null,
-    priorityLevel: detail.analysis?.priorityLevel ?? null,
-    importanceScore: detail.analysis?.importanceScore ?? null,
-    urgencyScore: detail.analysis?.urgencyScore ?? null,
-    shortSummary: detail.analysis?.shortSummary ?? null,
-    needsReply: detail.analysis?.needsReply ?? null,
-    analysisEligible: detail.analysisEligible,
-    analysisCandidateScore: detail.analysisCandidateScore,
-    analysisCandidateReasons: detail.analysisCandidateReasons,
-    analysisSkippedReason: detail.analysisSkippedReason,
-    analysisCandidateEvaluatedAt: detail.analysisCandidateEvaluatedAt,
-    attentionResolved: detail.attentionResolved,
-    attentionResolvedAt: detail.attentionResolvedAt,
-    attentionStatus: detail.attentionStatus,
-    attentionStatusUpdatedAt: detail.attentionStatusUpdatedAt,
-    attentionReasons: []
-  };
 }

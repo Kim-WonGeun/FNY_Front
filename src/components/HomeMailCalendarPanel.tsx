@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { CALENDAR_MONTH_OPTIONS } from '../constants';
 import type { EmailListItem } from '../types';
 import {
@@ -22,12 +22,14 @@ type HomeMailCalendarPanelProps = {
   calendarMonthNumber: number;
   calendarPickerOpen: boolean;
   calendarYear: number;
+  listScrollTop: number;
   renderEmail: (email: EmailListItem, index: number, key: string) => ReactNode;
   selectedCalendarDate: string;
   selectedCalendarEmails: EmailListItem[];
   onCalendarDateSelect: (dateKey: string) => void;
   onCalendarMonthChange: (monthKey: string) => void;
   onCalendarPickerOpenChange: (open: boolean) => void;
+  onListScrollTopChange: (scrollTop: number) => void;
   onTodaySelect: () => void;
 };
 
@@ -37,14 +39,41 @@ export function HomeMailCalendarPanel({
   calendarMonthNumber,
   calendarPickerOpen,
   calendarYear,
+  listScrollTop,
   renderEmail,
   selectedCalendarDate,
   selectedCalendarEmails,
   onCalendarDateSelect,
   onCalendarMonthChange,
   onCalendarPickerOpenChange,
+  onListScrollTopChange,
   onTodaySelect
 }: HomeMailCalendarPanelProps) {
+  const listRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const list = listRef.current;
+    if (!list) {
+      return;
+    }
+
+    const frameId = window.requestAnimationFrame(() => {
+      list.scrollTop = listScrollTop;
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [listScrollTop, selectedCalendarDate, selectedCalendarEmails.length]);
+
+  const handleDateSelect = (dateKey: string) => {
+    onListScrollTopChange(0);
+    onCalendarDateSelect(dateKey);
+  };
+
+  const handleMonthChange = (monthKey: string) => {
+    onListScrollTopChange(0);
+    onCalendarMonthChange(monthKey);
+  };
+
   return (
     <section className="mail-calendar-panel" aria-label="메일 캘린더">
       <div className="mail-calendar-card">
@@ -56,13 +85,13 @@ export function HomeMailCalendarPanel({
             </button>
           </div>
           <div className="mail-calendar-nav">
-            <button type="button" onClick={() => onCalendarMonthChange(shiftMonthKey(calendarMonth, -1))} aria-label="이전 달">
+            <button type="button" onClick={() => handleMonthChange(shiftMonthKey(calendarMonth, -1))} aria-label="이전 달">
               이전
             </button>
             <button type="button" onClick={onTodaySelect}>
               오늘
             </button>
-            <button type="button" onClick={() => onCalendarMonthChange(shiftMonthKey(calendarMonth, 1))} aria-label="다음 달">
+            <button type="button" onClick={() => handleMonthChange(shiftMonthKey(calendarMonth, 1))} aria-label="다음 달">
               다음
             </button>
           </div>
@@ -70,11 +99,11 @@ export function HomeMailCalendarPanel({
         {calendarPickerOpen ? (
           <div className="mail-calendar-picker" aria-label="연도와 월 선택">
             <div className="mail-calendar-picker-year">
-              <button type="button" onClick={() => onCalendarMonthChange(`${calendarYear - 1}-${String(calendarMonthNumber).padStart(2, '0')}`)} aria-label="이전 연도">
+              <button type="button" onClick={() => handleMonthChange(`${calendarYear - 1}-${String(calendarMonthNumber).padStart(2, '0')}`)} aria-label="이전 연도">
                 이전
               </button>
               <strong>{calendarYear}년</strong>
-              <button type="button" onClick={() => onCalendarMonthChange(`${calendarYear + 1}-${String(calendarMonthNumber).padStart(2, '0')}`)} aria-label="다음 연도">
+              <button type="button" onClick={() => handleMonthChange(`${calendarYear + 1}-${String(calendarMonthNumber).padStart(2, '0')}`)} aria-label="다음 연도">
                 다음
               </button>
             </div>
@@ -87,7 +116,7 @@ export function HomeMailCalendarPanel({
                     type="button"
                     className={selected ? 'mail-calendar-month-active' : ''}
                     onClick={() => {
-                      onCalendarMonthChange(`${calendarYear}-${String(month).padStart(2, '0')}`);
+                      handleMonthChange(`${calendarYear}-${String(month).padStart(2, '0')}`);
                       onCalendarPickerOpenChange(false);
                     }}
                     aria-pressed={selected}
@@ -121,7 +150,7 @@ export function HomeMailCalendarPanel({
                   isSelected ? 'mail-calendar-day-selected' : '',
                   isToday ? 'mail-calendar-day-today' : ''
                 ].filter(Boolean).join(' ')}
-                onClick={() => onCalendarDateSelect(day.dateKey)}
+                onClick={() => handleDateSelect(day.dateKey)}
               >
                 <span className="mail-calendar-date">{day.dayOfMonth}</span>
                 {hasMail ? <span className="mail-calendar-count">{day.stats.total}</span> : null}
@@ -140,7 +169,12 @@ export function HomeMailCalendarPanel({
               : `${selectedCalendarEmails.length}건의 메일이 있습니다.`}
           </p>
         </div>
-        <div className="mail-table" role="list">
+        <div
+          ref={listRef}
+          className="mail-table"
+          role="list"
+          onScroll={(event) => onListScrollTopChange(event.currentTarget.scrollTop)}
+        >
           {selectedCalendarEmails.length === 0 ? (
             <EmptyState title="메일이 없습니다" description="다른 날짜를 선택하면 해당 날짜의 메일을 볼 수 있습니다." />
           ) : (

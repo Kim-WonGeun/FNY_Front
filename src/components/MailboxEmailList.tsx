@@ -86,16 +86,18 @@ export function MailboxEmailList({
         onScroll={(event) => onScrollTopChange(event.currentTarget.scrollTop)}
       >
         {pagedEmails.length === 0 ? (
-          <EmptyState
-            title="표시할 메일이 없습니다"
-            description={
-              hasSearchFilter
-                ? '검색어와 선택한 필터에 맞는 메일을 찾지 못했습니다.'
-                : '선택한 분류에 해당하는 메일이 없습니다.'
-            }
-            actionLabel={hasAnyFilter ? '전체 메일 보기' : undefined}
-            onAction={onResetFilters}
-          />
+          <div className="mailbox-empty-panel">
+            <EmptyState
+              title={hasSearchFilter ? '검색 결과가 없습니다' : '표시할 메일이 없습니다'}
+              description={
+                hasSearchFilter
+                  ? '검색어나 기간 조건을 조금 넓히면 더 많은 메일을 볼 수 있습니다.'
+                  : '선택한 분류에 해당하는 메일이 없습니다.'
+              }
+              actionLabel={hasAnyFilter ? '조건 모두 해제' : undefined}
+              onAction={onResetFilters}
+            />
+          </div>
         ) : (
           pagedEmails.map((email, index) => (
             <MailListRow

@@ -116,6 +116,7 @@ function App() {
   const [analysisHistoryState, setAnalysisHistoryState] = useState<Record<string, LoadState>>({});
   const {
     analysisQueueFilter,
+    calendarListScrollTop,
     calendarMonth,
     calendarPickerOpen,
     listQuery,
@@ -123,6 +124,7 @@ function App() {
     setAnalysisQueueFilter,
     setCalendarMonth,
     setCalendarPickerOpen,
+    setCalendarListScrollTop,
     setListQuery,
     setSelectedCalendarDate,
     setSpotlightFilter,
@@ -336,7 +338,7 @@ function App() {
     } catch (error) {
       const fallbackAccount = getFallbackMailAccount(targetUserId);
       setOverview({ ...sampleOverview, userId: targetUserId });
-      setAllEmails(sampleOverview.spotlightEmails);
+      setAllEmails((current) => (navView === 'mailDetail' ? current : sampleOverview.spotlightEmails));
       setSelectedEmailId((current) =>
         navView === 'mailDetail' ? current : getFirstEmailId(sampleOverview.spotlightEmails)
       );
@@ -386,7 +388,7 @@ function App() {
       );
       setAllMailLoadState('ready');
     } catch (error) {
-      setAllEmails(sampleOverview.spotlightEmails);
+      setAllEmails((current) => (navView === 'mailDetail' ? current : sampleOverview.spotlightEmails));
       setAllMailPage(1);
       setExpandedMailId(null);
       setSelectedEmailId((current) =>
@@ -511,6 +513,7 @@ function App() {
     calendarYear,
     calendarMonthNumber,
     calendarPickerOpen,
+    calendarListScrollTop,
     calendarDays,
     selectedCalendarDate,
     selectedCalendarEmails,
@@ -528,7 +531,11 @@ function App() {
     onCalendarPickerOpenChange: setCalendarPickerOpen,
     onCalendarMonthChange: changeCalendarMonth,
     onCalendarDateSelect: selectCalendarDate,
-    onTodaySelect: selectTodayInCalendar,
+    onCalendarListScrollTopChange: setCalendarListScrollTop,
+    onTodaySelect: () => {
+      setCalendarListScrollTop(0);
+      selectTodayInCalendar();
+    },
     onOpenEmail: (emailId, sequence) => openEmailDetail(emailId, { backView: 'home', sequence }),
     onToggleEmailDetail: toggleEmailDetail,
     onAnalysisQueueFilterChange: setAnalysisQueueFilter,
