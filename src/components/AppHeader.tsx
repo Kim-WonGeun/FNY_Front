@@ -6,6 +6,7 @@ const navTitle: Record<NavView, string> = {
   allMail: '메일함',
   mailDetail: '메일 상세',
   accounts: '메일 계정',
+  activity: '작업 기록',
   settings: '설정'
 };
 

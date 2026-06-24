@@ -1,4 +1,6 @@
 import type { EmailDetail, EmailListItem } from '../types';
+import { useState } from 'react';
+import { patchMailboxState } from '../api/mailbox';
 import { formatDate } from '../utils/date';
 
 type MailDetailHeaderProps = {
@@ -24,6 +26,28 @@ export function MailDetailHeader({
   onBack,
   onOpenEmail
 }: MailDetailHeaderProps) {
+  const [mailState, setMailState] = useState({
+    read: displayEmail.read,
+    starred: displayEmail.starred,
+    archived: false
+  });
+  const [stateUpdating, setStateUpdating] = useState(false);
+  const [stateMessage, setStateMessage] = useState<string | null>(null);
+
+  const updateState = async (state: { read?: boolean; starred?: boolean; archived?: boolean }) => {
+    setStateUpdating(true);
+    setStateMessage(null);
+    try {
+      const updated = await patchMailboxState(displayEmail.id, state);
+      setMailState({ read: updated.read, starred: updated.starred, archived: updated.archived });
+      setStateMessage('메일 상태를 변경했습니다.');
+    } catch (error) {
+      setStateMessage(error instanceof Error ? error.message : '메일 상태를 변경하지 못했습니다.');
+    } finally {
+      setStateUpdating(false);
+    }
+  };
+
   return (
     <>
       <div className="mail-detail-toolbar">
@@ -31,6 +55,15 @@ export function MailDetailHeader({
           메일 목록으로
         </button>
         <div className="mail-detail-toolbar-actions">
+          <button type="button" className="mail-detail-nav-btn" disabled={stateUpdating} onClick={() => updateState({ read: !mailState.read })}>
+            {mailState.read ? '읽지 않음' : '읽음'}
+          </button>
+          <button type="button" className="mail-detail-nav-btn" disabled={stateUpdating} onClick={() => updateState({ starred: !mailState.starred })}>
+            {mailState.starred ? '별표 해제' : '별표'}
+          </button>
+          <button type="button" className="mail-detail-nav-btn" disabled={stateUpdating || mailState.archived} onClick={() => updateState({ archived: true })}>
+            {mailState.archived ? '보관됨' : '보관'}
+          </button>
           <button
             type="button"
             className="mail-detail-nav-btn"
@@ -52,6 +85,7 @@ export function MailDetailHeader({
           {receivedAt ? <time dateTime={receivedAt}>{formatDate(receivedAt)}</time> : null}
         </div>
       </div>
+      {stateMessage ? <p className="mail-detail-state-message" role="status">{stateMessage}</p> : null}
 
       <div className="mail-detail-head">
         <div>

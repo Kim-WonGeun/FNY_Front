@@ -14,7 +14,7 @@ export function MailboxToolbar({
         onClick={() => onAdvancedSearchOpenChange(!advancedSearchOpen)}
         aria-expanded={advancedSearchOpen}
       >
-        상세 검색
+        {advancedSearchOpen ? '상세 검색 닫기' : '상세 검색'}
       </button>
     </div>
   );

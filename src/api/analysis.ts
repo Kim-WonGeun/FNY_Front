@@ -29,6 +29,17 @@ export async function createEmailAnalysisJob(emailId: string) {
   return (await response.json()) as AnalysisJobCreateResult;
 }
 
+export async function processAnalysisQueue(limit = 10) {
+  const response = await apiFetch(`/api/me/analysis-jobs/process?limit=${limit}`, { method: 'POST' });
+  if (!response.ok) throw new Error(await readApiError(response));
+  return (await response.json()) as {
+    requestedCount: number;
+    processedCount: number;
+    completedCount: number;
+    failedCount: number;
+  };
+}
+
 export async function saveEmailAnalysisFeedback(
   analysisId: string,
   userId: string,
@@ -52,6 +63,18 @@ export async function saveEmailAnalysisFeedback(
 
 export async function patchAttentionStatus(emailId: string, status: AttentionStatus) {
   const response = await apiFetch(`/api/emails/${emailId}/attention-status?status=${status}`, {
+    method: 'PATCH'
+  });
+
+  if (!response.ok) {
+    throw new Error(await readApiError(response));
+  }
+
+  return (await response.json()) as EmailDetail;
+}
+
+export async function patchAnalysisCandidate(emailId: string, eligible: boolean) {
+  const response = await apiFetch(`/api/emails/${emailId}/analysis-candidate?eligible=${eligible}`, {
     method: 'PATCH'
   });
 

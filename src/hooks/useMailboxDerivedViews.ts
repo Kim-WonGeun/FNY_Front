@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import { ALL_MAIL_PAGE_SIZE } from '../constants';
 import {
   buildCalendarDays,
   getMailboxDatePreset
@@ -11,18 +10,8 @@ import {
 import {
   getAnalysisQueueCounts,
   getAnalysisQueueEmails,
-  getAnalysisSkippedReasonStats,
-  getMailboxAnalysisCounts
+  getAnalysisSkippedReasonStats
 } from '../utils/mailAnalysisQueue';
-import {
-  getEmailsForMailboxCategory,
-  getFilteredMailboxEmails,
-  getMailboxCounts
-} from '../utils/mailFilters';
-import {
-  getPagedEmails,
-  getTotalPages
-} from '../utils/mailPagination';
 import {
   getFilteredSpotlightEmails,
   getOpenSpotlightEmails,
@@ -30,6 +19,7 @@ import {
   getSpotlightTabCounts
 } from '../utils/mailSpotlight';
 import { sortEmailsByReceivedDesc } from '../utils/mailSorting';
+import { useFilteredMailboxViews } from './useFilteredMailboxViews';
 import type {
   AnalysisQueueFilter,
   EmailListItem,
@@ -51,6 +41,7 @@ type UseMailboxDerivedViewsOptions = {
   calendarMonth: string;
   listQuery: string;
   mailboxAnalysisFilter: MailboxAnalysisFilter;
+  mailboxAccountId: string;
   mailboxCategory: MailboxCategory;
   overview: MailboxOverview;
   primaryMailAccountEmail: string | null;
@@ -70,6 +61,7 @@ export function useMailboxDerivedViews({
   calendarMonth,
   listQuery,
   mailboxAnalysisFilter,
+  mailboxAccountId,
   mailboxCategory,
   overview,
   primaryMailAccountEmail,
@@ -105,33 +97,25 @@ export function useMailboxDerivedViews({
     () => getFilteredSpotlightEmails(sortedEmails, spotlightFilter, listQuery),
     [sortedEmails, spotlightFilter, listQuery]
   );
-  const mailboxCategoryEmails = useMemo(
-    () => getEmailsForMailboxCategory(sortedAllEmails, mailboxCategory, primaryMailAccountEmail),
-    [sortedAllEmails, mailboxCategory, primaryMailAccountEmail]
-  );
-  const filteredAllEmails = useMemo(() => {
-    return getFilteredMailboxEmails(mailboxCategoryEmails, {
-      analysisFilter: mailboxAnalysisFilter,
-      query: allMailQuery,
-      senderQuery: allMailSenderQuery,
-      startDate: allMailStartDate,
-      endDate: allMailEndDate,
-      searchBody: allMailSearchBody
-    });
-  }, [mailboxCategoryEmails, mailboxAnalysisFilter, allMailQuery, allMailSenderQuery, allMailStartDate, allMailEndDate, allMailSearchBody]);
-  const mailboxCounts = useMemo(
-    () => getMailboxCounts(sortedAllEmails, primaryMailAccountEmail),
-    [sortedAllEmails, primaryMailAccountEmail]
-  );
-  const mailboxAnalysisCounts = useMemo(
-    () => getMailboxAnalysisCounts(mailboxCategoryEmails),
-    [mailboxCategoryEmails]
-  );
-  const allMailTotalPages = getTotalPages(filteredAllEmails.length, ALL_MAIL_PAGE_SIZE);
-  const pagedAllEmails = useMemo(
-    () => getPagedEmails(filteredAllEmails, allMailPage, ALL_MAIL_PAGE_SIZE),
-    [filteredAllEmails, allMailPage]
-  );
+  const {
+    filteredEmails: filteredAllEmails,
+    mailboxCounts,
+    mailboxAnalysisCounts,
+    pagedEmails: pagedAllEmails,
+    totalPages: allMailTotalPages
+  } = useFilteredMailboxViews({
+    sortedAllEmails,
+    mailboxAccountId,
+    mailboxCategory,
+    primaryMailAccountEmail,
+    mailboxAnalysisFilter,
+    query: allMailQuery,
+    senderQuery: allMailSenderQuery,
+    startDate: allMailStartDate,
+    endDate: allMailEndDate,
+    searchBody: allMailSearchBody,
+    page: allMailPage
+  });
 
   return {
     allMailTotalPages,

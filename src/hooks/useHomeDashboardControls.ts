@@ -28,3 +28,5 @@ export function useHomeDashboardControls() {
     spotlightFilter
   };
 }
+
+export type UseHomeDashboardControlsResult = ReturnType<typeof useHomeDashboardControls>;

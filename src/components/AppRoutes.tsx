@@ -1,8 +1,9 @@
-import type { AuthSession, LoadState, MailAccountSummary, MailDensity, NavView, ReportType, WeeklyLoadState, WeeklyReport } from '../types';
+import type { AuthSession, LoadState, MailAccountSummary, MailDensity, MailSyncResult, NavView, ReportType, WeeklyLoadState, WeeklyReport } from '../types';
 import { AccountsPage } from './AccountsPage';
 import { HomeDashboardPage, type HomeDashboardPageProps } from './HomeDashboardPage';
 import { MailDetailPage, type MailDetailPageProps } from './MailDetailPage';
 import { MailboxPage, type MailboxPageProps } from './MailboxPage';
+import { OperationsPage } from './OperationsPage';
 import { SettingsPage } from './SettingsPage';
 import {
   WeeklyReportsPage,
@@ -34,6 +35,7 @@ type AppRoutesProps = {
     primaryMailAccountId: string | null;
     primaryMailAccountEmail: string | null;
     syncState: LoadState;
+    lastSyncResult: MailSyncResult | null;
     onSync: () => void;
   };
   settings: {
@@ -87,6 +89,10 @@ export function AppRoutes({
 
   if (navView === 'settings') {
     return <SettingsPage {...settings} />;
+  }
+
+  if (navView === 'activity') {
+    return <OperationsPage />;
   }
 
   if (navView === 'mailDetail') {

@@ -1,7 +1,5 @@
-import { useCallback } from 'react';
 import {
   archiveWeeklyReportWorkspace,
-  fetchWeeklyWorkspace,
   saveWeeklyReportWorkspace
 } from '../api/reports';
 import type {
@@ -15,13 +13,13 @@ import type {
 import {
   buildWeeklyReportDraft,
   createWeeklyWorkspaceSnapshot,
-  readWeeklyWorkspaceSnapshot,
   weeklySaveStateFromMode,
   weeklyWorkspaceStorageKey,
   workspaceSaveStatusFromMode,
   workspaceStatusFromResponse,
   workspaceStatusFromSnapshot
 } from '../utils/reports';
+import { useWeeklyWorkspaceLoader } from './useWeeklyWorkspaceLoader';
 
 type WeeklySaveState = 'idle' | 'draft-saved' | 'saved' | 'error';
 
@@ -59,56 +57,14 @@ export function useWeeklyWorkspace({
   setWeeklyHistoryActionId,
   updateHistoryWorkspaceStatus
 }: UseWeeklyWorkspaceOptions) {
-  const loadLocalWeeklyWorkspaceFallback = useCallback(
-    (reportId: string) => {
-      const snapshot = readWeeklyWorkspaceSnapshot(userId, reportId);
-      if (!snapshot) {
-        setWeeklyWorkspaceStatus(null);
-        setWeeklyDraftViewMode('original');
-        return;
-      }
-      setEditableWeeklyDraft(snapshot.draftText);
-      setExcludedWeeklySourceIds(snapshot.excludedSourceIds);
-      setWeeklyDraftDirty(true);
-      setWeeklyWorkspaceStatus(workspaceStatusFromSnapshot(snapshot));
-      setWeeklyDraftViewMode('workspace');
-    },
-    [
-      setEditableWeeklyDraft,
-      setExcludedWeeklySourceIds,
-      setWeeklyDraftDirty,
-      setWeeklyDraftViewMode,
-      setWeeklyWorkspaceStatus,
-      userId
-    ]
-  );
-
-  const loadWeeklyWorkspace = useCallback(
-    async (reportId: string) => {
-      try {
-        const workspace = await fetchWeeklyWorkspace(reportId);
-        if (!workspace) {
-          loadLocalWeeklyWorkspaceFallback(reportId);
-          return;
-        }
-        setEditableWeeklyDraft(workspace.draftText);
-        setExcludedWeeklySourceIds(workspace.excludedSourceIds ?? []);
-        setWeeklyDraftDirty(true);
-        setWeeklyWorkspaceStatus(workspaceStatusFromResponse(workspace));
-        setWeeklyDraftViewMode('workspace');
-      } catch {
-        loadLocalWeeklyWorkspaceFallback(reportId);
-      }
-    },
-    [
-      loadLocalWeeklyWorkspaceFallback,
-      setEditableWeeklyDraft,
-      setExcludedWeeklySourceIds,
-      setWeeklyDraftDirty,
-      setWeeklyDraftViewMode,
-      setWeeklyWorkspaceStatus
-    ]
-  );
+  const { loadWeeklyWorkspace } = useWeeklyWorkspaceLoader({
+    userId,
+    setEditableWeeklyDraft,
+    setExcludedWeeklySourceIds,
+    setWeeklyDraftDirty,
+    setWeeklyWorkspaceStatus,
+    setWeeklyDraftViewMode
+  });
 
   async function saveWeeklyWorkspace(mode: WeeklyWorkspaceSaveMode) {
     if (!weeklyReport) {

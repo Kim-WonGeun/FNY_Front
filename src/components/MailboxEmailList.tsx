@@ -33,6 +33,7 @@ type MailboxEmailListProps = {
   theme: 'light' | 'dark';
   onResetFilters: () => void;
   onRequestAnalysis: (emailId: string) => void;
+  onUpdateAnalysisCandidate: (emailId: string, eligible: boolean) => void;
   onSaveAnalysisFeedback: (analysisId: string, feedbackType: AnalysisFeedbackType) => void;
   onScrollTopChange: (scrollTop: number) => void;
   onToggleEmailDetail: (emailId: string) => void;
@@ -59,6 +60,7 @@ export function MailboxEmailList({
   theme,
   onResetFilters,
   onRequestAnalysis,
+  onUpdateAnalysisCandidate,
   onSaveAnalysisFeedback,
   onScrollTopChange,
   onToggleEmailDetail,
@@ -115,6 +117,7 @@ export function MailboxEmailList({
               agentHealth={agentHealth}
               attentionUpdating={attentionUpdatingId === email.id}
               onRequestAnalysis={onRequestAnalysis}
+              onUpdateAnalysisCandidate={onUpdateAnalysisCandidate}
               onUpdateAttentionStatus={onUpdateAttentionStatus}
               feedbackSavingId={analysisFeedbackSavingId}
               feedbackMessages={analysisFeedbackMessages}

@@ -5,6 +5,7 @@ export const viewPaths: Record<Exclude<NavView, 'mailDetail'>, string> = {
   weekly: '/reports',
   allMail: '/mailbox',
   accounts: '/accounts',
+  activity: '/activity',
   settings: '/settings'
 };
 
@@ -28,6 +29,9 @@ export function getViewFromPath(pathname = window.location.pathname): NavView {
   }
   if (pathname.startsWith('/accounts')) {
     return 'accounts';
+  }
+  if (pathname.startsWith('/activity')) {
+    return 'activity';
   }
   if (pathname.startsWith('/settings')) {
     return 'settings';

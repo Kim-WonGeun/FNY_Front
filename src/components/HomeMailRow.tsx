@@ -24,6 +24,7 @@ export type MailRowRuntimeProps = {
   analysisHistory: Record<string, EmailAnalysis[]>;
   analysisHistoryState: Record<string, LoadState>;
   onRequestAnalysis: (emailId: string) => void;
+  onUpdateAnalysisCandidate: (emailId: string, eligible: boolean) => void;
   onUpdateAttentionStatus: (emailId: string, status: AttentionStatus) => void;
   onSaveAnalysisFeedback: (analysisId: string, feedbackType: AnalysisFeedbackType) => void;
 };
@@ -59,6 +60,7 @@ export function HomeMailRow({
       agentHealth={runtime.agentHealth}
       attentionUpdating={runtime.attentionUpdatingId === email.id}
       onRequestAnalysis={runtime.onRequestAnalysis}
+      onUpdateAnalysisCandidate={runtime.onUpdateAnalysisCandidate}
       onUpdateAttentionStatus={runtime.onUpdateAttentionStatus}
       feedbackSavingId={runtime.analysisFeedbackSavingId}
       feedbackMessages={runtime.analysisFeedbackMessages}

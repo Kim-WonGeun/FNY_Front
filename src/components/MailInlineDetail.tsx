@@ -12,6 +12,7 @@ import type {
 } from '../types';
 import { decodeHtmlEntities } from '../utils/mailContent';
 import { AnalysisInsightSummary } from './AnalysisInsightSummary';
+import { EmptyState } from './common';
 import { AnalysisStatusCard } from './mailAnalysis';
 import { OriginalMailBody } from './OriginalMailBody';
 
@@ -31,6 +32,7 @@ type MailInlineDetailProps = {
   analysisHistory: EmailAnalysis[];
   analysisHistoryState: LoadState;
   onRequestAnalysis: (emailId: string) => void;
+  onUpdateAnalysisCandidate: (emailId: string, eligible: boolean) => void;
   onUpdateAttentionStatus: (emailId: string, status: AttentionStatus) => void;
   onSaveAnalysisFeedback: (analysisId: string, feedbackType: AnalysisFeedbackType) => void;
 };
@@ -51,6 +53,7 @@ export function MailInlineDetail({
   analysisHistory,
   analysisHistoryState,
   onRequestAnalysis,
+  onUpdateAnalysisCandidate,
   onUpdateAttentionStatus,
   onSaveAnalysisFeedback
 }: MailInlineDetailProps) {
@@ -64,9 +67,7 @@ export function MailInlineDetail({
   return (
     <div className="mail-inline-detail">
       {isLoading ? (
-        <p className="status-line" style={{ margin: 0 }}>
-          메일 내용을 불러오는 중입니다.
-        </p>
+        <EmptyState title="메일을 불러오는 중입니다" description="원문과 분석 정보를 준비하고 있습니다." />
       ) : (
         <>
           {detailLoadState === 'fallback' && detailErrorMessage ? (
@@ -107,6 +108,8 @@ export function MailInlineDetail({
                 submitting={analysisSubmitting}
                 agentHealth={agentHealth}
                 onRequest={() => onRequestAnalysis(email.id)}
+                candidateUpdating={analysisSubmitting}
+                onUpdateAnalysisCandidate={(eligible) => onUpdateAnalysisCandidate(email.id, eligible)}
                 attentionUpdating={attentionUpdating}
                 onUpdateAttentionStatus={(status) => onUpdateAttentionStatus(email.id, status)}
                 feedbackSaving={Boolean(detail?.analysis && feedbackSavingId === detail.analysis.id)}

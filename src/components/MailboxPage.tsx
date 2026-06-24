@@ -7,38 +7,23 @@ import type {
   EmailAnalysis,
   EmailDetail,
   EmailListItem,
-  LoadState,
-  MailboxAnalysisFilter,
-  MailboxCategory,
-  MailboxDatePreset
+  LoadState
 } from '../types';
 import {
   hasAnyMailboxFilter,
   hasMailboxSearchFilter
 } from '../utils/mailboxFilterState';
-import { MailboxControlsPanel } from './MailboxControlsPanel';
+import {
+  MailboxControlsPanel,
+  type MailboxControlsPanelProps
+} from './MailboxControlsPanel';
 import { MailboxEmailList } from './MailboxEmailList';
 import { MailboxLoadStatus } from './MailboxLoadStatus';
 
-export type MailboxPageProps = {
+export type MailboxPageProps = MailboxControlsPanelProps & {
   loadState: LoadState;
   allEmailsCount: number;
   errorMessage: string | null;
-  category: MailboxCategory;
-  analysisFilter: MailboxAnalysisFilter;
-  statusFilterOpen: boolean;
-  mailboxCounts: { all: number; inbox: number; sent: number };
-  analysisCounts: { all: number; candidate: number; excluded: number; done: number };
-  advancedSearchOpen: boolean;
-  query: string;
-  senderQuery: string;
-  datePreset: MailboxDatePreset;
-  startDate: string;
-  endDate: string;
-  searchBody: boolean;
-  page: number;
-  totalPages: number;
-  filteredCount: number;
   pagedEmails: EmailListItem[];
   selectedEmailId: string;
   scrollTop: number;
@@ -55,20 +40,8 @@ export type MailboxPageProps = {
   analysisFeedbackMessages: Record<string, AnalysisFeedbackMessage>;
   analysisHistory: Record<string, EmailAnalysis[]>;
   analysisHistoryState: Record<string, LoadState>;
-  onCategoryChange: (category: MailboxCategory) => void;
-  onAnalysisFilterChange: (filter: MailboxAnalysisFilter) => void;
-  onStatusFilterOpenChange: (open: boolean) => void;
-  onAdvancedSearchOpenChange: (open: boolean) => void;
-  onQueryChange: (query: string) => void;
-  onDatePresetChange: (preset: MailboxDatePreset) => void;
-  onSenderQueryChange: (query: string) => void;
-  onStartDateChange: (date: string) => void;
-  onEndDateChange: (date: string) => void;
-  onSearchBodyChange: (searchBody: boolean) => void;
-  onSearchReset: () => void;
-  onPageChange: (page: number) => void;
-  onResetFilters: () => void;
   onRequestAnalysis: (emailId: string) => void;
+  onUpdateAnalysisCandidate: (emailId: string, eligible: boolean) => void;
   onUpdateAttentionStatus: (emailId: string, status: AttentionStatus) => void;
   onSaveAnalysisFeedback: (analysisId: string, feedbackType: AnalysisFeedbackType) => void;
   onToggleEmailDetail: (emailId: string) => void;
@@ -124,10 +97,14 @@ export function MailboxPage({
   onPageChange,
   onResetFilters,
   onRequestAnalysis,
+  onUpdateAnalysisCandidate,
   onUpdateAttentionStatus,
   onSaveAnalysisFeedback,
   onToggleEmailDetail,
-  onScrollTopChange
+  onScrollTopChange,
+  mailAccounts,
+  mailAccountId,
+  onMailAccountChange
 }: MailboxPageProps) {
   const filterState = { category, analysisFilter, query, senderQuery, startDate, endDate, searchBody };
 
@@ -164,6 +141,9 @@ export function MailboxPage({
         onSearchReset={onSearchReset}
         onPageChange={onPageChange}
         onResetFilters={onResetFilters}
+        mailAccounts={mailAccounts}
+        mailAccountId={mailAccountId}
+        onMailAccountChange={onMailAccountChange}
       />
 
       <MailboxEmailList
@@ -186,6 +166,7 @@ export function MailboxPage({
         theme={theme}
         onResetFilters={onResetFilters}
         onRequestAnalysis={onRequestAnalysis}
+        onUpdateAnalysisCandidate={onUpdateAnalysisCandidate}
         onSaveAnalysisFeedback={onSaveAnalysisFeedback}
         onScrollTopChange={onScrollTopChange}
         onToggleEmailDetail={onToggleEmailDetail}

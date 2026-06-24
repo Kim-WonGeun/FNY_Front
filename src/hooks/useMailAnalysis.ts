@@ -3,12 +3,10 @@ import {
   createEmailAnalysisJob,
   patchAttentionStatus
 } from '../api/analysis';
-import { fetchEmailDetail } from '../api/mailbox';
 import type {
   AgentHealth,
   AnalysisFeedbackMessage,
   AttentionStatus,
-  AuthSession,
   DetailLoadState,
   EmailAnalysis,
   EmailDetail,
@@ -21,22 +19,14 @@ import {
   updateDetailAttentionStatus,
   updateEmailAttentionStatus
 } from '../utils/mailAttentionUpdates';
-import {
-  detailLoadErrorMessage,
-  findDetailFallback
-} from '../utils/mailDetailLoading';
-import { toEmailListItem } from '../utils/mailDetail';
-import {
-  updateOverviewSpotlightEmail,
-  upsertEmailListItem
-} from '../utils/mailListUpdates';
 import { normalizeEmailDetail } from '../utils/mailNormalizers';
 import { useAgentHealthLoader } from './useAgentHealthLoader';
+import { useAnalysisCandidateUpdate } from './useAnalysisCandidateUpdate';
 import { useAnalysisFeedback } from './useAnalysisFeedback';
 import { useAnalysisHistoryLoader } from './useAnalysisHistoryLoader';
+import { useEmailDetailLoader } from './useEmailDetailLoader';
 
 type UseMailAnalysisOptions = {
-  authSession: AuthSession | null;
   userId: string;
   navView: NavView;
   sortedEmails: EmailListItem[];
@@ -61,7 +51,6 @@ type UseMailAnalysisOptions = {
 };
 
 export function useMailAnalysis({
-  authSession,
   userId,
   navView,
   sortedEmails,
@@ -95,39 +84,24 @@ export function useMailAnalysis({
     setAnalysisHistoryState
   });
   const { loadAgentHealth } = useAgentHealthLoader({ setAgentHealth });
-
-  async function loadEmailDetail(emailId: string) {
-    const requestSeq = detailRequestSeq.current + 1;
-    detailRequestSeq.current = requestSeq;
-    setDetailLoadState('loading');
-    setDetailErrorMessage(null);
-    setEmailDetail((current) => (current?.id === emailId ? current : null));
-
-    const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => controller.abort(), 10000);
-
-    try {
-      const data = await fetchEmailDetail(emailId, controller.signal);
-      if (requestSeq !== detailRequestSeq.current) {
-        return;
-      }
-      const detail = normalizeEmailDetail(data);
-      const listItem = toEmailListItem(detail);
-      setEmailDetail(detail);
-      setAllEmails((current) => upsertEmailListItem(current, listItem));
-      setOverview((current) => updateOverviewSpotlightEmail(current, listItem));
-      setDetailLoadState('ready');
-    } catch (error) {
-      if (requestSeq !== detailRequestSeq.current) {
-        return;
-      }
-      setEmailDetail(findDetailFallback(emailId, sortedEmails, allEmails));
-      setDetailLoadState('fallback');
-      setDetailErrorMessage(detailLoadErrorMessage(error));
-    } finally {
-      window.clearTimeout(timeoutId);
-    }
-  }
+  const { loadEmailDetail } = useEmailDetailLoader({
+    sortedEmails,
+    allEmails,
+    detailRequestSeq,
+    setOverview,
+    setAllEmails,
+    setEmailDetail,
+    setDetailLoadState,
+    setDetailErrorMessage
+  });
+  const { updateAnalysisCandidate } = useAnalysisCandidateUpdate({
+    setOverview,
+    setAllEmails,
+    setEmailDetail,
+    setAnalysisRequestingId,
+    setSyncState,
+    refreshMailboxes
+  });
 
   async function refreshMailboxes() {
     await loadOverview(userId);
@@ -191,6 +165,7 @@ export function useMailAnalysis({
     loadAgentHealth,
     requestEmailAnalysis,
     saveAnalysisFeedback,
+    updateAnalysisCandidate,
     updateAttentionStatus
   };
 }

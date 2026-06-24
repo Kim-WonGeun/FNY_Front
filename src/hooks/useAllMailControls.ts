@@ -13,6 +13,7 @@ export function useAllMailControls() {
   const [mailboxCategory, setMailboxCategory] = useState<MailboxCategory>('all');
   const [mailboxAnalysisFilter, setMailboxAnalysisFilter] = useState<MailboxAnalysisFilter>('all');
   const [mailboxStatusFilterOpen, setMailboxStatusFilterOpen] = useState(false);
+  const [mailboxAccountId, setMailboxAccountId] = useState('all');
 
   function resetAllMailSearchFields() {
     setAllMailQuery('');
@@ -24,6 +25,7 @@ export function useAllMailControls() {
 
   function resetAllMailFilters() {
     setMailboxCategory('all');
+    setMailboxAccountId('all');
     setMailboxAnalysisFilter('all');
     resetAllMailSearchFields();
     setAllMailPage(1);
@@ -57,6 +59,7 @@ export function useAllMailControls() {
     allMailStartDate,
     allMailScrollTop,
     mailboxAnalysisFilter,
+    mailboxAccountId,
     mailboxCategory,
     mailboxStatusFilterOpen,
     prepareAnalysisFilter,
@@ -72,7 +75,10 @@ export function useAllMailControls() {
     setAllMailStartDate,
     setAllMailScrollTop,
     setMailboxAnalysisFilter,
+    setMailboxAccountId,
     setMailboxCategory,
     setMailboxStatusFilterOpen
   };
 }
+
+export type UseAllMailControlsResult = ReturnType<typeof useAllMailControls>;

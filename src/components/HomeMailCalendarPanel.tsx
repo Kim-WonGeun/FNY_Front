@@ -1,20 +1,13 @@
 import { useEffect, useRef, type ReactNode } from 'react';
-import { CALENDAR_MONTH_OPTIONS } from '../constants';
 import type { EmailListItem } from '../types';
 import {
   formatCalendarDate,
   formatCalendarMonth,
-  shiftMonthKey,
-  todayKey
+  shiftMonthKey
 } from '../utils/date';
 import { EmptyState } from './common';
-
-type CalendarDay = {
-  dateKey: string;
-  dayOfMonth: number;
-  inCurrentMonth: boolean;
-  stats: { total: number };
-};
+import { HomeCalendarGrid, type CalendarDay } from './HomeCalendarGrid';
+import { HomeCalendarMonthPicker } from './HomeCalendarMonthPicker';
 
 type HomeMailCalendarPanelProps = {
   calendarDays: CalendarDay[];
@@ -97,67 +90,18 @@ export function HomeMailCalendarPanel({
           </div>
         </div>
         {calendarPickerOpen ? (
-          <div className="mail-calendar-picker" aria-label="연도와 월 선택">
-            <div className="mail-calendar-picker-year">
-              <button type="button" onClick={() => handleMonthChange(`${calendarYear - 1}-${String(calendarMonthNumber).padStart(2, '0')}`)} aria-label="이전 연도">
-                이전
-              </button>
-              <strong>{calendarYear}년</strong>
-              <button type="button" onClick={() => handleMonthChange(`${calendarYear + 1}-${String(calendarMonthNumber).padStart(2, '0')}`)} aria-label="다음 연도">
-                다음
-              </button>
-            </div>
-            <div className="mail-calendar-month-grid">
-              {CALENDAR_MONTH_OPTIONS.map((month) => {
-                const selected = month === calendarMonthNumber;
-                return (
-                  <button
-                    key={month}
-                    type="button"
-                    className={selected ? 'mail-calendar-month-active' : ''}
-                    onClick={() => {
-                      handleMonthChange(`${calendarYear}-${String(month).padStart(2, '0')}`);
-                      onCalendarPickerOpenChange(false);
-                    }}
-                    aria-pressed={selected}
-                  >
-                    {month}월
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          <HomeCalendarMonthPicker
+            calendarMonthNumber={calendarMonthNumber}
+            calendarYear={calendarYear}
+            onClose={() => onCalendarPickerOpenChange(false)}
+            onMonthChange={handleMonthChange}
+          />
         ) : null}
-
-        <div className="mail-calendar-weekdays" aria-hidden="true">
-          {['일', '월', '화', '수', '목', '금', '토'].map((day) => (
-            <span key={day}>{day}</span>
-          ))}
-        </div>
-        <div className="mail-calendar-grid">
-          {calendarDays.map((day) => {
-            const isSelected = day.dateKey === selectedCalendarDate;
-            const isToday = day.dateKey === todayKey();
-            const hasMail = day.stats.total > 0;
-
-            return (
-              <button
-                type="button"
-                key={day.dateKey}
-                className={[
-                  'mail-calendar-day',
-                  day.inCurrentMonth ? '' : 'mail-calendar-day-muted',
-                  isSelected ? 'mail-calendar-day-selected' : '',
-                  isToday ? 'mail-calendar-day-today' : ''
-                ].filter(Boolean).join(' ')}
-                onClick={() => handleDateSelect(day.dateKey)}
-              >
-                <span className="mail-calendar-date">{day.dayOfMonth}</span>
-                {hasMail ? <span className="mail-calendar-count">{day.stats.total}</span> : null}
-              </button>
-            );
-          })}
-        </div>
+        <HomeCalendarGrid
+          calendarDays={calendarDays}
+          selectedCalendarDate={selectedCalendarDate}
+          onDateSelect={handleDateSelect}
+        />
       </div>
 
       <div className="mail-calendar-list">

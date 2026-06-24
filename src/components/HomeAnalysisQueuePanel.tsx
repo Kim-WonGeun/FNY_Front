@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import type { AnalysisQueueFilter, EmailListItem } from '../types';
+import { useAnalysisQueueProcessor } from '../hooks/useAnalysisQueueProcessor';
 import { EmptyState, FilterTab } from './common';
 
 type HomeAnalysisQueuePanelProps = {
@@ -9,6 +10,7 @@ type HomeAnalysisQueuePanelProps = {
   renderEmail: (email: EmailListItem, index: number, key: string) => ReactNode;
   onAnalysisQueueFilterChange: (filter: AnalysisQueueFilter) => void;
   onOpenMailboxForAnalysis: (filter: AnalysisQueueFilter) => void;
+  onQueueProcessed: () => void;
 };
 
 export function HomeAnalysisQueuePanel({
@@ -17,8 +19,10 @@ export function HomeAnalysisQueuePanel({
   analysisQueueFilter,
   renderEmail,
   onAnalysisQueueFilterChange,
-  onOpenMailboxForAnalysis
+  onOpenMailboxForAnalysis,
+  onQueueProcessed
 }: HomeAnalysisQueuePanelProps) {
+  const { message, processing, processQueue } = useAnalysisQueueProcessor(onQueueProcessed);
   return (
     <section className="analysis-queue-panel status-analysis-panel" aria-label="처리 상태">
       <div className="section-heading">
@@ -40,10 +44,14 @@ export function HomeAnalysisQueuePanel({
       </div>
 
       <div className="analysis-queue-actions">
+        <button type="button" className="btn-weekly" onClick={processQueue} disabled={processing || analysisQueueCounts.candidate === 0}>
+          {processing ? '분석 중' : '대기 작업 분석'}
+        </button>
         <button type="button" className="btn-weekly" onClick={() => onOpenMailboxForAnalysis(analysisQueueFilter)}>
           메일함에서 전체 보기
         </button>
       </div>
+      {message ? <p className="settings-save-status" role="status">{message}</p> : null}
 
       <div className="mail-table" role="list">
         {analysisQueueEmails.length === 0 ? (

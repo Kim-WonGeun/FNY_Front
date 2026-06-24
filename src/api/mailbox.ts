@@ -3,7 +3,9 @@ import type {
   EmailDetail,
   EmailListItem,
   MailAccountSummary,
-  MailboxOverview
+  MailboxOverview,
+  MailboxState,
+  GmailConnectionStatus
 } from '../types';
 import { apiFetch } from './client';
 import { readApiError, type ApiErrorParser } from './errors';
@@ -34,6 +36,49 @@ export async function fetchMailAccounts() {
   }
 
   return (await response.json()) as MailAccountSummary[];
+}
+
+export async function setPrimaryMailAccount(mailAccountId: string) {
+  const response = await apiFetch(`/api/me/mail-accounts/${mailAccountId}/primary`, { method: 'PATCH' });
+  if (!response.ok) throw new Error(await readApiError(response));
+  return (await response.json()) as MailAccountSummary;
+}
+
+export async function disconnectMailAccount(mailAccountId: string) {
+  const response = await apiFetch(`/api/me/mail-accounts/${mailAccountId}`, { method: 'DELETE' });
+  if (!response.ok) throw new Error(await readApiError(response));
+  return (await response.json()) as MailAccountSummary;
+}
+
+export async function syncMailAccount(mailAccountId: string) {
+  const response = await apiFetch(`/api/me/mail-accounts/${mailAccountId}/sync?limit=100`, { method: 'POST' });
+  if (!response.ok) throw new Error(await readApiError(response));
+  return response.json();
+}
+
+export async function beginGoogleAccountLink() {
+  const response = await apiFetch('/api/me/mail-accounts/link/google', { method: 'POST' });
+  if (!response.ok) throw new Error(await readApiError(response));
+  return (await response.json()) as { authorizationUrl: string };
+}
+
+export async function checkGmailConnection(mailAccountId: string) {
+  const response = await apiFetch(`/api/me/mail-accounts/${mailAccountId}/connection-status`);
+  if (!response.ok) throw new Error(await readApiError(response));
+  return (await response.json()) as GmailConnectionStatus;
+}
+
+export async function patchMailboxState(
+  emailId: string,
+  state: { read?: boolean; starred?: boolean; archived?: boolean }
+) {
+  const response = await apiFetch(`/api/emails/${emailId}/mailbox-state`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(state)
+  });
+  if (!response.ok) throw new Error(await readApiError(response));
+  return (await response.json()) as MailboxState;
 }
 
 export async function fetchAllEmails(search: EmailSearchParams, parseApiError: ApiErrorParser) {

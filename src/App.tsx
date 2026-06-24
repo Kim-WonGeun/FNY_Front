@@ -28,19 +28,14 @@ import {
   getViewFromPath,
   updateBrowserPath
 } from './utils/appNavigation';
-import {
-  fetchAllEmails,
-  fetchMailAccounts,
-  fetchMailboxOverview
-} from './api/mailbox';
 import { FilterChip } from './components/common';
 import { AppHeader } from './components/AppHeader';
 import { AppRoutes } from './components/AppRoutes';
 import { AppSidebar } from './components/AppSidebar';
-import type { HomeDashboardPageProps } from './components/HomeDashboardPage';
 import { LoginScreen } from './components/LoginScreen';
-import type { MailDetailPageProps } from './components/MailDetailPage';
-import type { MailboxPageProps } from './components/MailboxPage';
+import { buildHomeDashboardPageProps } from './components/buildHomeDashboardPageProps';
+import { buildMailDetailPageProps } from './components/buildMailDetailPageProps';
+import { buildMailboxPageProps } from './components/buildMailboxPageProps';
 import { useAppPreferences } from './hooks/useAppPreferences';
 import { useAppNavigation } from './hooks/useAppNavigation';
 import { useApiErrorParser } from './hooks/useApiErrorParser';
@@ -49,24 +44,14 @@ import { useAllMailControls } from './hooks/useAllMailControls';
 import { useHomeDashboardControls } from './hooks/useHomeDashboardControls';
 import { useMailAnalysis } from './hooks/useMailAnalysis';
 import { useMailboxBootstrap } from './hooks/useMailboxBootstrap';
+import { useMailboxDataLoaders } from './hooks/useMailboxDataLoaders';
 import { useMailDetailEffects } from './hooks/useMailDetailEffects';
+import { useMailDetailNavigation } from './hooks/useMailDetailNavigation';
+import { useMailDetailSelection } from './hooks/useMailDetailSelection';
 import { useMailSync } from './hooks/useMailSync';
 import { useMailboxViews } from './hooks/useMailboxViews';
 import { useWeeklyReports } from './hooks/useWeeklyReports';
-import {
-  getFirstEmailId,
-  getPageForEmailId,
-  resolveSelectedEmailId
-} from './utils/mailPagination';
-import {
-  getFallbackMailAccount,
-  getPrimaryMailAccount
-} from './utils/mailAccounts';
-import { findAdjacentMailItems, findSelectedMailItem } from './utils/mailSelection';
-import {
-  normalizeEmailList,
-  normalizeOverview
-} from './utils/mailNormalizers';
+import { getFirstEmailId, getPageForEmailId } from './utils/mailPagination';
 import { sampleDetails, sampleOverview } from './data/sampleMailbox';
 
 function App() {
@@ -114,65 +99,10 @@ function App() {
   const [analysisFeedbackMessages, setAnalysisFeedbackMessages] = useState<Record<string, AnalysisFeedbackMessage>>({});
   const [analysisHistory, setAnalysisHistory] = useState<Record<string, EmailAnalysis[]>>({});
   const [analysisHistoryState, setAnalysisHistoryState] = useState<Record<string, LoadState>>({});
-  const {
-    analysisQueueFilter,
-    calendarListScrollTop,
-    calendarMonth,
-    calendarPickerOpen,
-    listQuery,
-    selectedCalendarDate,
-    setAnalysisQueueFilter,
-    setCalendarMonth,
-    setCalendarPickerOpen,
-    setCalendarListScrollTop,
-    setListQuery,
-    setSelectedCalendarDate,
-    setSpotlightFilter,
-    spotlightFilter
-  } = useHomeDashboardControls();
-  const {
-    allMailAdvancedSearchOpen,
-    allMailEndDate,
-    allMailPage,
-    allMailQuery,
-    allMailSearchBody,
-    allMailSenderQuery,
-    allMailStartDate,
-    allMailScrollTop,
-    mailboxAnalysisFilter,
-    mailboxCategory,
-    mailboxStatusFilterOpen,
-    prepareAnalysisFilter,
-    prepareReportSourceOpen,
-    resetAllMailFilters,
-    resetAllMailSearchFields,
-    setAllMailAdvancedSearchOpen,
-    setAllMailEndDate,
-    setAllMailPage,
-    setAllMailQuery,
-    setAllMailSearchBody,
-    setAllMailSenderQuery,
-    setAllMailStartDate,
-    setAllMailScrollTop,
-    setMailboxAnalysisFilter,
-    setMailboxCategory,
-    setMailboxStatusFilterOpen
-  } = useAllMailControls();
+  const homeControls = useHomeDashboardControls();
+  const allMailControls = useAllMailControls();
 
-  const {
-    resetAutoSync,
-    setSyncState,
-    syncGmail,
-    syncState
-  } = useMailSync({
-    authSession,
-    loadAllEmails,
-    loadOverview,
-    navView,
-    primaryMailAccountId,
-    userId
-  });
-
+  const resetAutoSyncRef = useRef<() => void>(() => {});
   const resetAuthSession = useCallback(
     (message?: string) => {
       localStorage.removeItem(AUTH_STORAGE_KEY);
@@ -192,10 +122,48 @@ function App() {
       updateBrowserPath('/', true);
       setAuthState('idle');
       setAuthError(message ?? null);
-      resetAutoSync();
+      resetAutoSyncRef.current();
     },
-    [primaryMailAccountId, resetAutoSync]
+    [primaryMailAccountId]
   );
+
+  const parseApiError = useApiErrorParser(authSession, resetAuthSession);
+  const { loadAllEmails, loadOverview } = useMailboxDataLoaders({
+    navView,
+    query: allMailControls.allMailQuery,
+    senderQuery: allMailControls.allMailSenderQuery,
+    startDate: allMailControls.allMailStartDate,
+    endDate: allMailControls.allMailEndDate,
+    searchBody: allMailControls.allMailSearchBody,
+    parseApiError,
+    setOverview,
+    setLoadState,
+    setErrorMessage,
+    setAllEmails,
+    setAllMailLoadState,
+    setAllMailError,
+    setAllMailPage: allMailControls.setAllMailPage,
+    setExpandedMailId,
+    setSelectedEmailId,
+    setMailAccounts,
+    setPrimaryMailAccountId,
+    setPrimaryMailAccountEmail
+  });
+  const {
+    lastSyncResult,
+    resetAutoSync,
+    setSyncState,
+    syncGmail,
+    syncState
+  } = useMailSync({
+    authSession,
+    loadAllEmails,
+    loadOverview,
+    navView,
+    primaryMailAccountId,
+    userId
+  });
+  resetAutoSyncRef.current = resetAutoSync;
 
   const navigateToView = useAppNavigation({
     setExpandedMailId,
@@ -203,8 +171,6 @@ function App() {
     setNavView,
     setSelectedEmailId
   });
-
-  const parseApiError = useApiErrorParser(authSession, resetAuthSession);
 
   const {
     sortedEmails,
@@ -238,27 +204,48 @@ function App() {
     primaryMailAccountEmail,
     selectedEmailId,
     expandedMailId,
-    spotlightFilter,
-    listQuery,
-    calendarMonth,
-    selectedCalendarDate,
-    allMailQuery,
-    allMailSenderQuery,
-    allMailStartDate,
-    allMailEndDate,
-    allMailSearchBody,
-    allMailPage,
-    mailboxCategory,
-    mailboxAnalysisFilter,
-    analysisQueueFilter,
-    setCalendarMonth,
-    setSelectedCalendarDate,
-    setAllMailStartDate,
-    setAllMailEndDate,
-    setAllMailAdvancedSearchOpen,
-    setAllMailPage,
+    spotlightFilter: homeControls.spotlightFilter,
+    listQuery: homeControls.listQuery,
+    calendarMonth: homeControls.calendarMonth,
+    selectedCalendarDate: homeControls.selectedCalendarDate,
+    allMailQuery: allMailControls.allMailQuery,
+    allMailSenderQuery: allMailControls.allMailSenderQuery,
+    allMailStartDate: allMailControls.allMailStartDate,
+    allMailEndDate: allMailControls.allMailEndDate,
+    allMailSearchBody: allMailControls.allMailSearchBody,
+    allMailPage: allMailControls.allMailPage,
+    mailboxCategory: allMailControls.mailboxCategory,
+    mailboxAnalysisFilter: allMailControls.mailboxAnalysisFilter,
+    mailboxAccountId: allMailControls.mailboxAccountId,
+    analysisQueueFilter: homeControls.analysisQueueFilter,
+    setCalendarMonth: homeControls.setCalendarMonth,
+    setSelectedCalendarDate: homeControls.setSelectedCalendarDate,
+    setAllMailStartDate: allMailControls.setAllMailStartDate,
+    setAllMailEndDate: allMailControls.setAllMailEndDate,
+    setAllMailAdvancedSearchOpen: allMailControls.setAllMailAdvancedSearchOpen,
+    setAllMailPage: allMailControls.setAllMailPage,
     setSelectedEmailId,
     setExpandedMailId
+  });
+
+  const {
+    closeEmailDetail,
+    openEmailDetail,
+    resolveDetailSequence,
+    toggleEmailDetail
+  } = useMailDetailNavigation({
+    navView,
+    mailDetailBackView,
+    mailDetailSequence,
+    filteredAllEmails,
+    filteredSpotlight,
+    sortedAllEmails,
+    setSelectedEmailId,
+    setExpandedMailId,
+    setMailDetailBackView,
+    setMailDetailSequence,
+    setNavView,
+    navigateToView
   });
 
   const {
@@ -267,9 +254,9 @@ function App() {
     loadAgentHealth,
     requestEmailAnalysis,
     saveAnalysisFeedback,
+    updateAnalysisCandidate,
     updateAttentionStatus
   } = useMailAnalysis({
-    authSession,
     userId,
     navView,
     sortedEmails,
@@ -309,95 +296,17 @@ function App() {
     userId
   });
 
-  async function loadOverview(targetUserId: string) {
-    setLoadState('loading');
-    setErrorMessage(null);
-
-    try {
-      const data = await fetchMailboxOverview(parseApiError);
-      const normalized = normalizeOverview(data);
-      setOverview(normalized);
-      setSelectedEmailId((current) =>
-        navView === 'mailDetail' ? current : resolveSelectedEmailId(normalized.spotlightEmails, current)
-      );
-      setLoadState('ready');
-
-      try {
-        const accounts = await fetchMailAccounts();
-        const primary = getPrimaryMailAccount(accounts);
-        setMailAccounts(accounts);
-        setPrimaryMailAccountId(primary?.id ?? null);
-        setPrimaryMailAccountEmail(primary?.accountEmail ?? null);
-      } catch {
-        const fallbackAccount = getFallbackMailAccount(targetUserId);
-        setMailAccounts([]);
-        setPrimaryMailAccountId(fallbackAccount.id);
-        setPrimaryMailAccountEmail(fallbackAccount.email);
-      }
-      void loadAllEmails(targetUserId, { resetExpanded: false });
-    } catch (error) {
-      const fallbackAccount = getFallbackMailAccount(targetUserId);
-      setOverview({ ...sampleOverview, userId: targetUserId });
-      setAllEmails((current) => (navView === 'mailDetail' ? current : sampleOverview.spotlightEmails));
-      setSelectedEmailId((current) =>
-        navView === 'mailDetail' ? current : getFirstEmailId(sampleOverview.spotlightEmails)
-      );
-      setLoadState('fallback');
-      setErrorMessage(error instanceof Error ? error.message : 'Unknown error');
-      setPrimaryMailAccountId(fallbackAccount.id);
-      setPrimaryMailAccountEmail(fallbackAccount.email);
-      setMailAccounts([]);
-    }
-  }
-
   useAllMailReload({
-    allMailEndDate,
-    allMailQuery,
-    allMailSearchBody,
-    allMailSenderQuery,
-    allMailStartDate,
+    allMailEndDate: allMailControls.allMailEndDate,
+    allMailQuery: allMailControls.allMailQuery,
+    allMailSearchBody: allMailControls.allMailSearchBody,
+    allMailSenderQuery: allMailControls.allMailSenderQuery,
+    allMailStartDate: allMailControls.allMailStartDate,
     authSession,
     loadAllEmails,
     navView,
     userId
   });
-
-  async function loadAllEmails(targetUserId: string, options?: { resetExpanded?: boolean }) {
-    setAllMailLoadState('loading');
-    setAllMailError(null);
-
-    try {
-      const data = await fetchAllEmails(
-        {
-          query: allMailQuery,
-          sender: allMailSenderQuery,
-          startDate: allMailStartDate,
-          endDate: allMailEndDate,
-          searchBody: allMailSearchBody
-        },
-        parseApiError
-      );
-      const normalized = normalizeEmailList(data);
-      setAllEmails(normalized);
-      setAllMailPage(1);
-      if (options?.resetExpanded !== false) {
-        setExpandedMailId(null);
-      }
-      setSelectedEmailId((current) =>
-        navView === 'mailDetail' ? current : resolveSelectedEmailId(normalized, current)
-      );
-      setAllMailLoadState('ready');
-    } catch (error) {
-      setAllEmails((current) => (navView === 'mailDetail' ? current : sampleOverview.spotlightEmails));
-      setAllMailPage(1);
-      setExpandedMailId(null);
-      setSelectedEmailId((current) =>
-        navView === 'mailDetail' ? current : getFirstEmailId(sampleOverview.spotlightEmails)
-      );
-      setAllMailLoadState('fallback');
-      setAllMailError(error instanceof Error ? error.message : 'Unknown error');
-    }
-  }
 
   async function startGmailLogin() {
     setAuthState('loading');
@@ -406,53 +315,20 @@ function App() {
   }
 
   function openMailboxForAnalysis(filter: AnalysisQueueFilter) {
-    prepareAnalysisFilter(filter);
+    allMailControls.prepareAnalysisFilter(filter);
     setExpandedMailId(null);
     navigateToView('allMail');
   }
 
-  function toggleEmailDetail(emailId: string) {
-    openEmailDetail(emailId);
-  }
-
-  function resolveDetailSequence(backView: NavView) {
-    if (backView === 'allMail') {
-      return filteredAllEmails;
-    }
-    if (backView === 'home') {
-      return filteredSpotlight;
-    }
-    return sortedAllEmails;
-  }
-
-  function openEmailDetail(emailId: string, options?: { backView?: NavView; sequence?: EmailListItem[] }) {
-    const backView = options?.backView ?? (navView === 'mailDetail' ? mailDetailBackView : navView);
-    const currentDetailSequence = navView === 'mailDetail' ? mailDetailSequence : [];
-    const sequence = options?.sequence ??
-      (currentDetailSequence.some((email) => email.id === emailId) ? currentDetailSequence : resolveDetailSequence(backView));
-
-    setSelectedEmailId(emailId);
-    setExpandedMailId(null);
-    setMailDetailBackView(backView);
-    setMailDetailSequence(sequence.some((email) => email.id === emailId) ? sequence : []);
-    setNavView('mailDetail');
-    updateBrowserPath(`/mail/${encodeURIComponent(emailId)}`);
-  }
-
-  function closeEmailDetail() {
-    setExpandedMailId(null);
-    navigateToView(mailDetailBackView === 'mailDetail' ? 'allMail' : mailDetailBackView);
-  }
-
   function changeAllMailPage(page: number) {
-    setAllMailPage(page);
-    setAllMailScrollTop(0);
+    allMailControls.setAllMailPage(page);
+    allMailControls.setAllMailScrollTop(0);
     setExpandedMailId(null);
   }
 
   function openReportSourceEmail(emailId: string) {
     const page = getPageForEmailId(sortedAllEmails, emailId, ALL_MAIL_PAGE_SIZE);
-    prepareReportSourceOpen(page);
+    allMailControls.prepareReportSourceOpen(page);
     openEmailDetail(emailId, {
       backView: navView === 'mailDetail' ? mailDetailBackView : navView,
       sequence: sortedAllEmails
@@ -485,135 +361,83 @@ function App() {
     analysisHistory,
     analysisHistoryState,
     onRequestAnalysis: requestEmailAnalysis,
+    onUpdateAnalysisCandidate: updateAnalysisCandidate,
     onUpdateAttentionStatus: updateAttentionStatus,
     onSaveAnalysisFeedback: saveAnalysisFeedback
   };
 
-  const selectedMailItem =
-    findSelectedMailItem(selectedEmailId, allEmails, sortedEmails, overview) ??
-    mailDetailSequence.find((email) => email.id === selectedEmailId) ??
-    null;
-  const fallbackDetailSequence = resolveDetailSequence(mailDetailBackView);
-  const detailEmailSequence = mailDetailSequence.some((email) => email.id === selectedEmailId)
-    ? mailDetailSequence
-    : fallbackDetailSequence;
-  const { previousEmail, nextEmail } = findAdjacentMailItems(selectedEmailId, detailEmailSequence);
+  const { selectedMailItem, previousEmail, nextEmail } = useMailDetailSelection({
+    selectedEmailId,
+    allEmails,
+    sortedEmails,
+    overview,
+    mailDetailSequence,
+    mailDetailBackView,
+    resolveDetailSequence
+  });
 
-  const homeDashboardProps: HomeDashboardPageProps = {
+  const homeDashboardProps = buildHomeDashboardPageProps({
     syncState,
+    lastSyncResult,
     loadState,
     errorMessage,
     overview,
     mailboxCounts,
     analysisQueueCounts,
     tabCounts,
-    spotlightFilter,
-    listQuery,
-    calendarMonth,
+    controls: homeControls,
     calendarYear,
     calendarMonthNumber,
-    calendarPickerOpen,
-    calendarListScrollTop,
     calendarDays,
-    selectedCalendarDate,
     selectedCalendarEmails,
     filteredSpotlight,
     processedTodayEmails,
     analysisSkippedReasonStats,
-    analysisQueueFilter,
     analysisQueueEmails,
     expandedMailId,
     emailDetail,
     mailRow: mailRowRuntimeProps,
-    onSync: () => void syncGmail(),
-    onSpotlightFilterChange: setSpotlightFilter,
-    onListQueryChange: setListQuery,
-    onCalendarPickerOpenChange: setCalendarPickerOpen,
-    onCalendarMonthChange: changeCalendarMonth,
-    onCalendarDateSelect: selectCalendarDate,
-    onCalendarListScrollTopChange: setCalendarListScrollTop,
-    onTodaySelect: () => {
-      setCalendarListScrollTop(0);
-      selectTodayInCalendar();
-    },
-    onOpenEmail: (emailId, sequence) => openEmailDetail(emailId, { backView: 'home', sequence }),
-    onToggleEmailDetail: toggleEmailDetail,
-    onAnalysisQueueFilterChange: setAnalysisQueueFilter,
-    onOpenMailboxForAnalysis: openMailboxForAnalysis
-  };
+    syncGmail,
+    changeCalendarMonth,
+    selectCalendarDate,
+    selectTodayInCalendar,
+    openEmailDetail,
+    toggleEmailDetail,
+    openMailboxForAnalysis
+  });
 
-  const mailboxPageProps: MailboxPageProps = {
+  const mailboxPageProps = buildMailboxPageProps({
     loadState: allMailLoadState,
     allEmailsCount: allEmails.length,
     errorMessage: allMailError,
-    category: mailboxCategory,
-    analysisFilter: mailboxAnalysisFilter,
-    statusFilterOpen: mailboxStatusFilterOpen,
+    controls: allMailControls,
     mailboxCounts,
     analysisCounts: mailboxAnalysisCounts,
-    advancedSearchOpen: allMailAdvancedSearchOpen,
-    query: allMailQuery,
-    senderQuery: allMailSenderQuery,
     datePreset: mailboxDatePreset,
-    startDate: allMailStartDate,
-    endDate: allMailEndDate,
-    searchBody: allMailSearchBody,
-    page: allMailPage,
     totalPages: allMailTotalPages,
     filteredCount: filteredAllEmails.length,
     pagedEmails: pagedAllEmails,
     selectedEmailId,
-    scrollTop: allMailScrollTop,
     expandedMailId,
     emailDetail,
-    ...mailRowRuntimeProps,
-    onCategoryChange: setMailboxCategory,
-    onAnalysisFilterChange: setMailboxAnalysisFilter,
-    onStatusFilterOpenChange: setMailboxStatusFilterOpen,
-    onAdvancedSearchOpenChange: setAllMailAdvancedSearchOpen,
-    onQueryChange: setAllMailQuery,
-    onDatePresetChange: applyMailboxDatePreset,
-    onSenderQueryChange: setAllMailSenderQuery,
-    onStartDateChange: setAllMailStartDate,
-    onEndDateChange: setAllMailEndDate,
-    onSearchBodyChange: setAllMailSearchBody,
-    onSearchReset: resetAllMailSearchFields,
-    onPageChange: changeAllMailPage,
-    onResetFilters: resetAllMailFilters,
-    onRequestAnalysis: requestEmailAnalysis,
-    onUpdateAttentionStatus: updateAttentionStatus,
-    onSaveAnalysisFeedback: saveAnalysisFeedback,
-    onToggleEmailDetail: toggleEmailDetail,
-    onScrollTopChange: setAllMailScrollTop
-  };
+    runtime: mailRowRuntimeProps,
+    mailAccounts,
+    applyMailboxDatePreset,
+    changeAllMailPage,
+    onToggleEmailDetail: toggleEmailDetail
+  });
 
-  const mailDetailPageProps: MailDetailPageProps = {
+  const mailDetailPageProps = buildMailDetailPageProps({
     email: selectedMailItem,
     previousEmail,
     nextEmail,
-    detail: emailDetail?.id === selectedEmailId ? emailDetail : null,
-    detailLoadState,
-    detailErrorMessage,
-    theme,
-    originalMailDefaultOpen,
-    analysisSubmitting: analysisRequestingId === selectedEmailId,
-    agentHealth,
-    attentionUpdating: attentionUpdatingId === selectedEmailId,
-    feedbackSavingId: analysisFeedbackSavingId,
-    feedbackMessages: analysisFeedbackMessages,
-    analysisHistory: selectedEmailId ? analysisHistory[selectedEmailId] ?? [] : [],
-    analysisHistoryState: selectedEmailId ? analysisHistoryState[selectedEmailId] ?? 'idle' : 'idle',
+    emailDetail,
+    selectedEmailId,
+    runtime: mailRowRuntimeProps,
     onBack: closeEmailDetail,
     onOpenEmail: openEmailDetail,
-    onRetry: () => {
-      if (selectedEmailId) {
-        void loadEmailDetail(selectedEmailId);
-      }
-    },
-    onRequestAnalysis: requestEmailAnalysis,
-    onUpdateAttentionStatus: updateAttentionStatus,
-    onSaveAnalysisFeedback: saveAnalysisFeedback
-  };
+    loadEmailDetail
+  });
 
   if (!authSession) {
     return (
@@ -655,6 +479,7 @@ function App() {
               primaryMailAccountId,
               primaryMailAccountEmail,
               syncState,
+              lastSyncResult,
               onSync: () => void syncGmail()
             }}
             settings={{

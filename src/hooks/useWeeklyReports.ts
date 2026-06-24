@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { WeeklyReportDraftProps, WeeklyReportSourcesProps } from '../components/WeeklyReportView';
 import type {
   AuthSession,
@@ -9,6 +9,7 @@ import type {
   WeeklyWorkspaceStatus
 } from '../types';
 import { useWeeklyReportGeneration } from './useWeeklyReportGeneration';
+import { useWeeklyReportLifecycle } from './useWeeklyReportLifecycle';
 import { useWeeklyHistory } from './useWeeklyHistory';
 import { useWeeklyDraft } from './useWeeklyDraft';
 import { useWeeklySourceSelection } from './useWeeklySourceSelection';
@@ -38,6 +39,11 @@ export function useWeeklyReports({
   const [weeklyWorkspaceStatus, setWeeklyWorkspaceStatus] = useState<WeeklyWorkspaceStatus | null>(null);
   const [weeklyDraftViewMode, setWeeklyDraftViewMode] = useState<WeeklyDraftViewMode>('original');
   const [weeklySaveState, setWeeklySaveState] = useState<'idle' | 'draft-saved' | 'saved' | 'error'>('idle');
+  const clearWeeklyWorkspaceRef = useRef<(reportId: string) => Promise<void>>(async () => {});
+  const clearWeeklyWorkspace = useCallback(
+    (reportId: string) => clearWeeklyWorkspaceRef.current(reportId),
+    []
+  );
   const {
     excludedWeeklySourceIds,
     setExcludedWeeklySourceIds,
@@ -71,6 +77,21 @@ export function useWeeklyReports({
       setWeeklyLoadState('error');
       setWeeklyError(error instanceof Error ? error.message : 'Unknown error');
     }
+  });
+
+  const {
+    weeklyCopyState,
+    editableWeeklyDraft,
+    setEditableWeeklyDraft,
+    weeklyDraftDirty,
+    setWeeklyDraftDirty,
+    applySelectedSourcesToDraft,
+    copyWeeklyReportDraft,
+    changeEditableWeeklyDraft
+  } = useWeeklyDraft({
+    weeklyReport,
+    selectedReportType,
+    includedWeeklyThreads
   });
 
   const {
@@ -116,57 +137,21 @@ export function useWeeklyReports({
     onClearWorkspace: clearWeeklyWorkspace
   });
 
-  function loadWeeklyWorkspace(reportId: string) {
-    return weeklyWorkspace.loadWeeklyWorkspace(reportId);
-  }
-
-  function clearWeeklyWorkspace(reportId: string) {
-    return weeklyWorkspace.clearWeeklyWorkspace(reportId);
-  }
-
-  useEffect(() => {
-    if (!authSession) {
-      return;
-    }
-    setWeeklyReport(null);
-    setWeeklySourcesOpen(false);
-    setWeeklyLoadState('idle');
-    setWeeklyError(null);
-    resetWeeklyHistory();
-  }, [authSession, userId]);
-
-  useEffect(() => {
-    setWeeklySaveState('idle');
-  }, [weeklyReport]);
-
-  useEffect(() => {
-    setWeeklyDraftDirty(false);
-    setExcludedWeeklySourceIds([]);
-    setWeeklyWorkspaceStatus(null);
-    setWeeklyDraftViewMode('original');
-    setWeeklySourcesOpen(false);
-  }, [weeklyReport, selectedReportType]);
-
-  useEffect(() => {
-    if (!weeklyReport) {
-      return;
-    }
-    void loadWeeklyWorkspace(weeklyReport.reportId);
-  }, [loadWeeklyWorkspace, weeklyReport]);
-
-  const {
-    weeklyCopyState,
-    editableWeeklyDraft,
-    setEditableWeeklyDraft,
-    weeklyDraftDirty,
-    setWeeklyDraftDirty,
-    applySelectedSourcesToDraft,
-    copyWeeklyReportDraft,
-    changeEditableWeeklyDraft
-  } = useWeeklyDraft({
+  useWeeklyReportLifecycle({
+    authSession,
+    userId,
     weeklyReport,
     selectedReportType,
-    includedWeeklyThreads
+    resetWeeklyHistory,
+    setWeeklyReport,
+    setWeeklySourcesOpen,
+    setWeeklyLoadState,
+    setWeeklyError,
+    setWeeklySaveState,
+    setWeeklyDraftDirty,
+    setExcludedWeeklySourceIds,
+    setWeeklyWorkspaceStatus,
+    setWeeklyDraftViewMode
   });
 
   const weeklyWorkspace = useWeeklyWorkspace({
@@ -184,6 +169,14 @@ export function useWeeklyReports({
     setWeeklyHistoryActionId,
     updateHistoryWorkspaceStatus
   });
+  clearWeeklyWorkspaceRef.current = weeklyWorkspace.clearWeeklyWorkspace;
+
+  useEffect(() => {
+    if (!weeklyReport) {
+      return;
+    }
+    void weeklyWorkspace.loadWeeklyWorkspace(weeklyReport.reportId);
+  }, [weeklyReport, weeklyWorkspace.loadWeeklyWorkspace]);
 
   const draft: WeeklyReportDraftProps = {
     workspaceStatus: weeklyWorkspaceStatus,

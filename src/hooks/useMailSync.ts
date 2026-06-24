@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { syncMailAccount } from '../api/analysis';
 import { todayKey } from '../utils/date';
 import { autoSyncMarkerKey } from '../utils/storage';
-import type { AuthSession, LoadState, NavView } from '../types';
+import type { AuthSession, LoadState, MailSyncResult, NavView } from '../types';
 
 type UseMailSyncOptions = {
   authSession: AuthSession | null;
@@ -23,6 +23,7 @@ export function useMailSync({
 }: UseMailSyncOptions) {
   const syncRequestInFlight = useRef(false);
   const [syncState, setSyncState] = useState<LoadState>('idle');
+  const [lastSyncResult, setLastSyncResult] = useState<MailSyncResult | null>(null);
   const [autoSyncDone, setAutoSyncDone] = useState(false);
 
   const syncGmail = useCallback(async (options?: { silent?: boolean }) => {
@@ -35,19 +36,26 @@ export function useMailSync({
     }
     syncRequestInFlight.current = true;
 
-    setSyncState('loading');
+    if (!options?.silent) {
+      setSyncState('loading');
+    }
     try {
-      await syncMailAccount(primaryMailAccountId);
+      const result = await syncMailAccount(primaryMailAccountId);
+      setLastSyncResult(result);
       if (options?.silent && primaryMailAccountId) {
         localStorage.setItem(autoSyncMarkerKey(primaryMailAccountId), todayKey());
       }
-      setSyncState('ready');
+      if (!options?.silent) {
+        setSyncState('ready');
+      }
       await loadOverview(userId);
       if (navView === 'allMail') {
         await loadAllEmails(userId);
       }
     } catch {
-      setSyncState('error');
+      if (!options?.silent) {
+        setSyncState('error');
+      }
     } finally {
       syncRequestInFlight.current = false;
     }
@@ -68,6 +76,7 @@ export function useMailSync({
 
   return {
     resetAutoSync: useCallback(() => setAutoSyncDone(false), []),
+    lastSyncResult,
     setSyncState,
     syncGmail,
     syncState

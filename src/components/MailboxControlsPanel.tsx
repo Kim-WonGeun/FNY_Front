@@ -1,5 +1,6 @@
 import { ALL_MAIL_PAGE_SIZE } from '../constants';
 import type {
+  MailAccountSummary,
   MailboxAnalysisFilter,
   MailboxCategory,
   MailboxDatePreset
@@ -11,7 +12,7 @@ import { MailboxDateFilter } from './MailboxDateFilter';
 import { MailboxFilterBar } from './MailboxFilterBar';
 import { MailboxToolbar } from './MailboxToolbar';
 
-type MailboxControlsPanelProps = {
+export type MailboxControlsPanelProps = {
   category: MailboxCategory;
   analysisFilter: MailboxAnalysisFilter;
   statusFilterOpen: boolean;
@@ -40,6 +41,9 @@ type MailboxControlsPanelProps = {
   onSearchReset: () => void;
   onPageChange: (page: number) => void;
   onResetFilters: () => void;
+  mailAccounts: MailAccountSummary[];
+  mailAccountId: string;
+  onMailAccountChange: (accountId: string) => void;
 };
 
 export function MailboxControlsPanel({
@@ -70,7 +74,10 @@ export function MailboxControlsPanel({
   onSearchBodyChange,
   onSearchReset,
   onPageChange,
-  onResetFilters
+  onResetFilters,
+  mailAccounts,
+  mailAccountId,
+  onMailAccountChange
 }: MailboxControlsPanelProps) {
   return (
     <>
@@ -83,6 +90,9 @@ export function MailboxControlsPanel({
         onCategoryChange={onCategoryChange}
         onAnalysisFilterChange={onAnalysisFilterChange}
         onStatusFilterOpenChange={onStatusFilterOpenChange}
+        mailAccounts={mailAccounts}
+        mailAccountId={mailAccountId}
+        onMailAccountChange={onMailAccountChange}
       />
 
       <MailboxToolbar advancedSearchOpen={advancedSearchOpen} onAdvancedSearchOpenChange={onAdvancedSearchOpenChange} />

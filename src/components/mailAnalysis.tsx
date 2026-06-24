@@ -26,6 +26,8 @@ type AnalysisStatusCardProps = {
   submitting: boolean;
   agentHealth: AgentHealth | null;
   onRequest: () => void;
+  candidateUpdating: boolean;
+  onUpdateAnalysisCandidate: (eligible: boolean) => void;
   attentionUpdating: boolean;
   onUpdateAttentionStatus: (status: AttentionStatus) => void;
   feedbackSaving: boolean;
@@ -42,6 +44,8 @@ export function AnalysisStatusCard({
   submitting,
   agentHealth,
   onRequest,
+  candidateUpdating,
+  onUpdateAnalysisCandidate,
   attentionUpdating,
   onUpdateAttentionStatus,
   feedbackSaving,
@@ -77,11 +81,12 @@ export function AnalysisStatusCard({
         agentHealth={agentHealth}
         compact={compact}
         submitting={submitting}
-        attentionUpdating={attentionUpdating}
         canRequest={canRequest}
         canUpdateAttention={canUpdateAttention}
+        candidateUpdating={candidateUpdating}
         scoreItems={scoreItems}
         onRequest={onRequest}
+        onUpdateAnalysisCandidate={onUpdateAnalysisCandidate}
         onUpdateAttentionStatus={onUpdateAttentionStatus}
       />
       {!agentReady ? <AgentStatusNote agentHealth={agentHealth} /> : null}

@@ -1,4 +1,4 @@
-import type { MailboxAnalysisFilter, MailboxCategory } from '../types';
+import type { MailAccountSummary, MailboxAnalysisFilter, MailboxCategory } from '../types';
 import { FilterChip, FilterTab } from './common';
 
 export function MailboxFilterBar({
@@ -9,7 +9,10 @@ export function MailboxFilterBar({
   analysisCounts,
   onCategoryChange,
   onAnalysisFilterChange,
-  onStatusFilterOpenChange
+  onStatusFilterOpenChange,
+  mailAccounts,
+  mailAccountId,
+  onMailAccountChange
 }: {
   category: MailboxCategory;
   analysisFilter: MailboxAnalysisFilter;
@@ -19,6 +22,9 @@ export function MailboxFilterBar({
   onCategoryChange: (category: MailboxCategory) => void;
   onAnalysisFilterChange: (filter: MailboxAnalysisFilter) => void;
   onStatusFilterOpenChange: (open: boolean) => void;
+  mailAccounts: MailAccountSummary[];
+  mailAccountId: string;
+  onMailAccountChange: (accountId: string) => void;
 }) {
   const selectCategory = (nextCategory: MailboxCategory) => {
     onCategoryChange(nextCategory);
@@ -48,6 +54,17 @@ export function MailboxFilterBar({
             label={`보낸메일 (${mailboxCounts.sent})`}
           />
         </div>
+        {mailAccounts.length > 1 ? (
+          <label className="mailbox-account-filter">
+            <span>메일 계정</span>
+            <select value={mailAccountId} onChange={(event) => onMailAccountChange(event.target.value)}>
+              <option value="all">전체 계정</option>
+              {mailAccounts.filter((account) => account.syncEnabled).map((account) => (
+                <option key={account.id} value={account.id}>{account.accountEmail}</option>
+              ))}
+            </select>
+          </label>
+        ) : null}
       </div>
       {statusFilterOpen ? (
         <div className="mailbox-analysis-filter" aria-label="분석 상태 필터">

@@ -4,17 +4,20 @@ import type {
   EmailListItem,
   LoadState,
   MailboxOverview,
+  MailSyncResult,
   SpotlightFilter
 } from '../types';
+import { useHomeMailRowRenderer } from '../hooks/useHomeMailRowRenderer';
 import { HomeAnalysisQueuePanel } from './HomeAnalysisQueuePanel';
 import { HomeDashboardSummary } from './HomeDashboardSummary';
 import { HomeMailCalendarPanel } from './HomeMailCalendarPanel';
-import { HomeMailRow, type MailRowRuntimeProps } from './HomeMailRow';
+import type { MailRowRuntimeProps } from './HomeMailRow';
 import { HomePriorityMailPanel } from './HomePriorityMailPanel';
 import { HomeStatusInsights } from './HomeStatusInsights';
 
 export type HomeDashboardPageProps = {
   syncState: LoadState;
+  lastSyncResult: MailSyncResult | null;
   loadState: LoadState;
   errorMessage: string | null;
   overview: MailboxOverview;
@@ -60,6 +63,7 @@ export type HomeDashboardPageProps = {
 
 export function HomeDashboardPage({
   syncState,
+  lastSyncResult,
   loadState,
   errorMessage,
   overview,
@@ -97,23 +101,14 @@ export function HomeDashboardPage({
   onAnalysisQueueFilterChange,
   onOpenMailboxForAnalysis
 }: HomeDashboardPageProps) {
-  const renderMailRow = (email: EmailListItem, index: number, expanded: boolean, onSelect: () => void, key: string) => (
-    <HomeMailRow
-      key={key}
-      email={email}
-      index={index}
-      expanded={expanded}
-      emailDetail={emailDetail}
-      runtime={mailRow}
-      onSelect={onSelect}
-    />
-  );
+  const renderMailRows = useHomeMailRowRenderer({ emailDetail, runtime: mailRow, onOpenEmail });
 
   return (
     <div className="status-dashboard" aria-label="홈 대시보드">
       <HomeDashboardSummary
         analysisQueueCounts={analysisQueueCounts}
         errorMessage={errorMessage}
+        lastSyncResult={lastSyncResult}
         loadState={loadState}
         mailboxCounts={mailboxCounts}
         overview={overview}
@@ -131,9 +126,7 @@ export function HomeDashboardPage({
         calendarPickerOpen={calendarPickerOpen}
         calendarYear={calendarYear}
         listScrollTop={calendarListScrollTop}
-        renderEmail={(email, index, key) =>
-          renderMailRow(email, index, false, () => onOpenEmail(email.id, selectedCalendarEmails), key)
-        }
+        renderEmail={renderMailRows(selectedCalendarEmails)}
         selectedCalendarDate={selectedCalendarDate}
         selectedCalendarEmails={selectedCalendarEmails}
         onCalendarDateSelect={onCalendarDateSelect}
@@ -146,9 +139,7 @@ export function HomeDashboardPage({
       <HomePriorityMailPanel
         filteredSpotlight={filteredSpotlight}
         listQuery={listQuery}
-        renderEmail={(email, index, key) =>
-          renderMailRow(email, index, false, () => onOpenEmail(email.id, filteredSpotlight), key)
-        }
+        renderEmail={renderMailRows(filteredSpotlight)}
         spotlightFilter={spotlightFilter}
         onListQueryChange={onListQueryChange}
         onSpotlightFilterChange={onSpotlightFilterChange}
@@ -167,11 +158,10 @@ export function HomeDashboardPage({
         analysisQueueCounts={analysisQueueCounts}
         analysisQueueEmails={analysisQueueEmails}
         analysisQueueFilter={analysisQueueFilter}
-        renderEmail={(email, index, key) =>
-          renderMailRow(email, index, false, () => onOpenEmail(email.id, analysisQueueEmails), key)
-        }
+        renderEmail={renderMailRows(analysisQueueEmails)}
         onAnalysisQueueFilterChange={onAnalysisQueueFilterChange}
         onOpenMailboxForAnalysis={onOpenMailboxForAnalysis}
+        onQueueProcessed={onSync}
       />
     </div>
   );

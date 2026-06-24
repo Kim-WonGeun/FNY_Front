@@ -22,7 +22,9 @@ export function candidateReasonLabel(reason: string) {
     LOW_VALUE_CATEGORY: '프로모션 계열',
     AUTO_SENDER: '자동 발신',
     LOW_VALUE_CONTENT: '광고/알림성 내용',
-    SELF_SENT: '내가 보낸 메일'
+    SELF_SENT: '내가 보낸 메일',
+    MANUAL_INCLUDE: '사용자 포함',
+    MANUAL_EXCLUDE: '사용자 제외'
   };
   return labels[reason] ?? reason;
 }
@@ -41,7 +43,9 @@ export function candidateReasonDescription(reason: string) {
     LOW_VALUE_CATEGORY: '프로모션/소셜/포럼처럼 업무 우선순위가 낮은 카테고리입니다.',
     AUTO_SENDER: '알림 계정이나 자동 발신 계열 주소로 보입니다.',
     LOW_VALUE_CONTENT: '광고, 뉴스레터, 인증번호, 로그인 알림 같은 내용이 감지되었습니다.',
-    SELF_SENT: '내 계정에서 보낸 메일이라 자동 분석 우선순위를 조금 낮췄습니다.'
+    SELF_SENT: '내 계정에서 보낸 메일이라 자동 분석 우선순위를 조금 낮췄습니다.',
+    MANUAL_INCLUDE: '사용자가 직접 분석 대상으로 포함했습니다.',
+    MANUAL_EXCLUDE: '사용자가 직접 자동 분석 대상에서 제외했습니다.'
   };
   return labels[reason] ?? reason;
 }
@@ -52,6 +56,7 @@ export function analysisSkippedReasonLabel(reason: string) {
     LOW_CANDIDATE_SCORE: '업무 처리 신호가 낮아 자동 분석에서 제외했습니다.',
     LOW_SIGNAL: '업무 처리 신호가 약해 우선 분석 대상에서 제외했습니다.',
     AUTOMATED_OR_PROMOTIONAL: '광고성 또는 자동 알림 메일로 판단해 자동 분석에서 제외했습니다.',
+    MANUAL_EXCLUDE: '사용자가 직접 자동 분석 대상에서 제외했습니다.',
     UNKNOWN: '제외 사유가 아직 정리되지 않았습니다.'
   };
   return labels[reason] ?? reason;
@@ -63,6 +68,7 @@ export function analysisSkippedReasonShortLabel(reason: string) {
     LOW_CANDIDATE_SCORE: '업무 신호가 낮아 분석에서 제외됨',
     LOW_SIGNAL: '업무 신호가 약해 분석에서 제외됨',
     AUTOMATED_OR_PROMOTIONAL: '광고성 또는 자동 알림으로 분석에서 제외됨',
+    MANUAL_EXCLUDE: '사용자가 분석에서 제외함',
     UNKNOWN: '제외 사유 미정리'
   };
   return labels[reason] ?? analysisSkippedReasonLabel(reason);

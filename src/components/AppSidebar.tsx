@@ -6,6 +6,7 @@ import {
   IconLayoutDashboard,
   IconPin,
   IconSettings,
+  IconSparkles,
   IconWeeklyReport
 } from './icons';
 
@@ -75,6 +76,12 @@ export function AppSidebar({
           label="메일 계정"
           icon={<IconInbox size={20} />}
           onClick={() => onNavViewChange('accounts')}
+        />
+        <SidebarLink
+          active={navView === 'activity'}
+          label="작업 기록"
+          icon={<IconSparkles size={20} />}
+          onClick={() => onNavViewChange('activity')}
         />
         <SidebarLink
           active={navView === 'settings'}

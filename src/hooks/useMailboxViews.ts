@@ -34,6 +34,7 @@ type UseMailboxViewsOptions = {
   allMailPage: number;
   mailboxCategory: MailboxCategory;
   mailboxAnalysisFilter: MailboxAnalysisFilter;
+  mailboxAccountId: string;
   analysisQueueFilter: AnalysisQueueFilter;
   setCalendarMonth: (monthKey: string) => void;
   setSelectedCalendarDate: (dateKey: string) => void;
@@ -66,6 +67,7 @@ export function useMailboxViews({
   allMailPage,
   mailboxCategory,
   mailboxAnalysisFilter,
+  mailboxAccountId,
   analysisQueueFilter,
   setCalendarMonth,
   setSelectedCalendarDate,
@@ -88,6 +90,7 @@ export function useMailboxViews({
     calendarMonth,
     listQuery,
     mailboxAnalysisFilter,
+    mailboxAccountId,
     mailboxCategory,
     overview,
     primaryMailAccountEmail,

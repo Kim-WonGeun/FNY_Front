@@ -25,6 +25,7 @@ export function MailListRow({
   analysisSubmitting,
   agentHealth,
   onRequestAnalysis,
+  onUpdateAnalysisCandidate,
   attentionUpdating,
   onUpdateAttentionStatus,
   feedbackSavingId,
@@ -46,6 +47,7 @@ export function MailListRow({
   analysisSubmitting: boolean;
   agentHealth: AgentHealth | null;
   onRequestAnalysis: (emailId: string) => void;
+  onUpdateAnalysisCandidate: (emailId: string, eligible: boolean) => void;
   attentionUpdating: boolean;
   onUpdateAttentionStatus: (emailId: string, status: AttentionStatus) => void;
   feedbackSavingId: string | null;
@@ -86,6 +88,7 @@ export function MailListRow({
           analysisHistory={analysisHistory}
           analysisHistoryState={analysisHistoryState}
           onRequestAnalysis={onRequestAnalysis}
+          onUpdateAnalysisCandidate={onUpdateAnalysisCandidate}
           onUpdateAttentionStatus={onUpdateAttentionStatus}
           onSaveAnalysisFeedback={onSaveAnalysisFeedback}
         />

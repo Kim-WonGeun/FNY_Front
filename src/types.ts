@@ -4,6 +4,9 @@ export type AnalysisFeedbackType = 'ACCEPTED' | 'NEEDS_FIX';
 
 export type EmailListItem = {
   id: string;
+  mailAccountId?: string | null;
+  accountEmail?: string | null;
+  provider?: string | null;
   subject: string;
   snippet: string | null;
   fromName: string | null;
@@ -45,7 +48,7 @@ export type DetailLoadState = 'idle' | 'loading' | 'ready' | 'fallback' | 'error
 export type WeeklyLoadState = 'idle' | 'loading' | 'ready' | 'error';
 export type SpotlightFilter = 'all' | 'urgent' | 'reply' | 'unread';
 export type AnalysisQueueFilter = 'candidate' | 'excluded' | 'done';
-export type NavView = 'home' | 'weekly' | 'allMail' | 'mailDetail' | 'accounts' | 'settings';
+export type NavView = 'home' | 'weekly' | 'allMail' | 'mailDetail' | 'accounts' | 'activity' | 'settings';
 export type MailboxCategory = 'all' | 'inbox' | 'sent';
 export type MailboxAnalysisFilter = 'all' | 'candidate' | 'excluded' | 'done';
 export type MailboxDatePreset = 'all' | 'today' | 'week' | 'month' | 'custom';
@@ -131,6 +134,63 @@ export type MailSyncResult = {
   analysisCompletedCount: number;
   analysisSkippedCount: number;
   syncedAt: string;
+};
+
+export type AnalysisPreference = {
+  analysisWindowDays: number;
+  excludeAutomated: boolean;
+  excludedSenders: string;
+  excludedKeywords: string;
+};
+
+export type MailboxState = {
+  emailId: string;
+  read: boolean;
+  starred: boolean;
+  archived: boolean;
+};
+
+export type GmailConnectionStatus = {
+  mailAccountId: string;
+  status: string;
+  reachable: boolean;
+  requiresReauthorization: boolean;
+  message: string;
+  checkedAt: string;
+};
+
+export type OperationAccount = {
+  mailAccountId: string;
+  accountEmail: string;
+  provider: string;
+  primary: boolean;
+  syncEnabled: boolean;
+  syncStatus: string;
+  lastSyncedAt: string | null;
+};
+
+export type OperationJob = {
+  jobId: string;
+  emailId: string;
+  subject: string | null;
+  accountEmail: string;
+  status: string;
+  retryCount: number;
+  maxRetries: number;
+  retryable: boolean;
+  statusMessage: string;
+  createdAt: string;
+  completedAt: string | null;
+};
+
+export type OperationSummary = {
+  pendingCount: number;
+  runningCount: number;
+  failedCount: number;
+  completedCount: number;
+  accounts: OperationAccount[];
+  recentJobs: OperationJob[];
+  checkedAt: string;
 };
 
 export type ApiErrorPayload = {

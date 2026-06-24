@@ -1,10 +1,12 @@
-import type { AnalysisQueueFilter, LoadState, MailboxOverview, SpotlightFilter } from '../types';
+import type { AnalysisQueueFilter, LoadState, MailboxOverview, MailSyncResult, SpotlightFilter } from '../types';
+import { formatDate } from '../utils/date';
 import { FilterTab, Metric } from './common';
 
 type HomeDashboardSummaryProps = {
   analysisQueueCounts: { candidate: number; excluded: number; done: number };
   errorMessage: string | null;
   loadState: LoadState;
+  lastSyncResult: MailSyncResult | null;
   mailboxCounts: { all: number; inbox: number; sent: number };
   overview: MailboxOverview;
   spotlightFilter: SpotlightFilter;
@@ -18,6 +20,7 @@ export function HomeDashboardSummary({
   analysisQueueCounts,
   errorMessage,
   loadState,
+  lastSyncResult,
   mailboxCounts,
   overview,
   spotlightFilter,
@@ -40,10 +43,19 @@ export function HomeDashboardSummary({
       </section>
 
       <div className="status-line" role="status">
+        {syncState === 'loading' && '메일을 동기화하고 있습니다. 잠시만 기다려 주세요.'}
+        {syncState === 'error' && '동기화에 실패했습니다. 계정 권한과 네트워크 상태를 확인해 주세요.'}
+        {syncState === 'ready' && lastSyncResult
+          ? `마지막 동기화 ${formatDate(lastSyncResult.syncedAt)} · 추가 ${lastSyncResult.insertedCount}건 · 건너뜀 ${lastSyncResult.skippedCount}건`
+          : null}
+        {syncState !== 'loading' && syncState !== 'error' && !(syncState === 'ready' && lastSyncResult) ? (
+          <>
         {loadState === 'loading' && '메일함을 불러오는 중입니다.'}
         {loadState === 'ready' && '최신 메일 기준으로 정리했습니다.'}
         {loadState === 'fallback' && `서버 연결 전이라 샘플 데이터로 보고 있습니다. ${errorMessage ?? ''}`}
         {loadState === 'error' && '메일함을 불러오지 못했습니다.'}
+          </>
+        ) : null}
       </div>
 
       <section className="status-metrics-grid" aria-label="메일 대시보드 지표">

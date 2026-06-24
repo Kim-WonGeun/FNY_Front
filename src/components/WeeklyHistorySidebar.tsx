@@ -1,4 +1,5 @@
 import type { WeeklyLoadState, WeeklyReport, WeeklyReportSummary } from '../types';
+import { useWeeklyHistoryFilters } from '../hooks/useWeeklyHistoryFilters';
 import { formatDate } from '../utils/date';
 import { normalizeWorkspaceStatus, reportTypeLabel, workspaceStatusLabel } from '../utils/reports';
 
@@ -27,6 +28,14 @@ export function WeeklyHistorySidebar({
   onCloseHistoryReport,
   onClearWeeklyWorkspace
 }: WeeklyHistorySidebarProps) {
+  const {
+    query: historyQuery,
+    setQuery: setHistoryQuery,
+    statusFilter: historyStatusFilter,
+    setStatusFilter: setHistoryStatusFilter,
+    filteredHistory
+  } = useWeeklyHistoryFilters(weeklyHistory);
+
   return (
     <aside className={`weekly-sidebar${weeklyHistoryOpen ? '' : ' weekly-sidebar-collapsed'}`} aria-label="저장된 주간 요약">
       <div className="weekly-sidebar-head">
@@ -41,8 +50,30 @@ export function WeeklyHistorySidebar({
         </button>
       </div>
       {weeklyHistoryOpen ? (
-        <ul className="weekly-sidebar-list">
-          {weeklyHistory.map((row) => {
+        <>
+          <div className="weekly-history-filter" aria-label="요약 검색과 필터">
+            <input
+              value={historyQuery}
+              onChange={(event) => setHistoryQuery(event.target.value)}
+              placeholder="기간·양식 검색"
+            />
+            <div className="weekly-history-filter-tabs" role="group" aria-label="저장 상태 필터">
+              <button type="button" className={historyStatusFilter === 'all' ? 'is-active' : ''} onClick={() => setHistoryStatusFilter('all')}>
+                전체
+              </button>
+              <button type="button" className={historyStatusFilter === 'draft' ? 'is-active' : ''} onClick={() => setHistoryStatusFilter('draft')}>
+                임시
+              </button>
+              <button type="button" className={historyStatusFilter === 'saved' ? 'is-active' : ''} onClick={() => setHistoryStatusFilter('saved')}>
+                저장
+              </button>
+            </div>
+          </div>
+          {filteredHistory.length === 0 ? (
+            <p className="weekly-history-empty">조건에 맞는 요약이 없습니다.</p>
+          ) : null}
+          <ul className="weekly-sidebar-list">
+          {filteredHistory.map((row) => {
             const normalizedWorkspaceStatus = normalizeWorkspaceStatus(row.workspaceStatus);
             const hasWorkspace = normalizedWorkspaceStatus !== 'NONE';
             const actionLoading = weeklyHistoryActionId === row.reportId;
@@ -100,7 +131,8 @@ export function WeeklyHistorySidebar({
               </li>
             );
           })}
-        </ul>
+          </ul>
+        </>
       ) : null}
     </aside>
   );
